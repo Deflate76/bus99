@@ -2,15 +2,11 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <!-- ✅ 모바일 반응형 필수 뷰포트 -->
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
   <meta name="HandheldFriendly" content="true" />
   <title>버스 시간표 (99번 / 2-1번)</title>
   <style>
-    /* 0) 박스 계산 안정화 */
     *, *::before, *::after { box-sizing: border-box; }
-
-    /* ✅ 크롬 자동 글자 확대 방지 */
     html { -webkit-text-size-adjust: 100%; }
     body {
       font-family: Arial, Helvetica, "Noto Sans KR", system-ui;
@@ -29,12 +25,19 @@
     }
     .selectors label {
       flex:1 1 48%;
-      min-width:0; /* ✅ flex 자식 폭 밀림 방지 */
+      min-width:0; /* flex 자식 폭 밀림 방지 */
     }
+    .toggles {
+      display:flex;
+      align-items:center;
+      gap:10px;
+      margin-left:auto;
+      flex:0 0 auto;
+    }
+    .toggles label { font-size:14px; }
     select { padding:6px 8px }
     .info { padding:10px 16px; background:#eee; color:#222 }
 
-    /* ✅ 가로 스크롤은 테이블 컨테이너 안에서만 */
     .table-container {
       padding:16px;
       overflow-x:auto;
@@ -44,7 +47,6 @@
       display:block;
     }
 
-    /* 테이블 공통 */
     table {
       width:100%;
       border-collapse:collapse;
@@ -58,7 +60,7 @@
     }
     th { background:#eee }
 
-    /* 데스크톱 sticky 헤더/첫열 */
+    /* 데스크톱 sticky */
     @media (min-width: 769px) {
       table thead th { position: sticky; top: 0; z-index: 2; }
       table th:first-child, table td:first-child {
@@ -69,10 +71,9 @@
       }
     }
 
-    /* ✅ 모바일 최적화 */
+    /* 모바일 최적화 */
     @media (max-width: 768px) {
-      html, body { width:100%; max-width:100vw; overflow-x:hidden; } /* 루트 오버플로우 차단 */
-
+      html, body { width:100%; max-width:100vw; overflow-x:hidden; }
       body { font-size: 14px; }
       .selectors { gap:8px; }
       .selectors label { width: calc(50% - 8px); }
@@ -80,9 +81,7 @@
       .info { font-size: 13px; line-height: 1.4; }
       table { font-size: 13px; }
       th, td { padding: 8px 10px; }
-      table thead th, table th:first-child, table td:first-child {
-        position: static !important; /* sticky 강제 해제 */
-      }
+      table thead th, table th:first-child, table td:first-child { position: static !important; }
     }
 
     @media (max-width: 420px) {
@@ -93,7 +92,6 @@
       th, td { padding: 6px 8px; }
     }
 
-    /* 이미지, select 등 폭 초과 방지 */
     img, table, select { max-width:100%; }
 
     .cell-prev { background:#c8e6c9 !important }
@@ -111,32 +109,155 @@
     <label>출발 방향:
       <select id="directionSelect"></select>
     </label>
+
+    <!-- 간단 보기 토글 -->
+    <div class="toggles">
+      <input type="checkbox" id="compactToggle" />
+      <label for="compactToggle">간단 보기(열 축소)</label>
+    </div>
   </div>
+
   <div class="info" id="infoBox">로딩 중…</div>
   <div class="table-container" id="tableContainer"></div>
 
 <script>
-/* ===================== 데이터 ===================== */
-const timetable = { /* (생략 — 원본 동일) */ };
+/* ===================== 시간표 원본 데이터(전체) ===================== */
+const timetable = {
+  weekday: {
+    "99번": [
+      [1,"6:10","6:40","6:20","6:50","6:30","7:00","6:40","7:10","7:00","7:30"],
+      [2,"6:50","7:20","7:00","7:30","7:10","7:40","7:20","7:50","7:40","8:05"],
+      [3,"7:50","8:20","8:00","8:30","8:10","8:40","8:20","8:50","8:40","9:05"],
+      [4,"8:50","9:20","9:00","9:30","9:10","9:40","9:20","9:50","9:40","10:05"],
+      [5,"9:50","10:20","10:00","10:30","10:10","10:40","10:20","10:50","10:40","11:05"],
+      [6,"10:50","11:20","11:00","11:30","11:10","11:40","11:20","11:50","11:40","12:05"],
+      [7,"11:50","12:20","12:00","12:30","12:10","12:40","12:20","12:50","12:40","13:05"],
+      [8,"12:50","13:20","13:00","13:30","13:10","13:40","13:20","13:50","13:40","14:05"],
+      [9,"13:50","14:20","14:00","14:30","14:10","14:40","14:20","14:50","14:40","15:05"],
+      [10,"14:50","15:20","15:00","15:30","15:10","15:40","15:20","15:50","15:40","16:05"],
+      [11,"15:50","16:20","16:00","16:30","16:10","16:40","16:20","16:50","16:40","17:05"],
+      [12,"16:50","17:20","17:00","17:30","17:10","17:40","17:20","17:50","17:40","18:05"],
+      [13,"17:50","18:20","18:00","18:30","18:10","18:40","18:20","18:50","18:40","19:05"],
+      [14,"18:50","19:20","19:00","19:30","19:10","19:40","19:20","19:50","19:40","20:05"],
+      [15,"19:50","20:20","20:00","20:30","20:10","20:40","20:20","20:50","20:40","21:05"],
+      [16,"20:50","21:20","21:00","21:30","21:10","21:40","21:20","21:50","21:40","22:05"],
+      [17,"21:50","22:20","22:00","22:30","22:10","22:40","22:20","22:50","22:40","23:05"],
+      [18,"22:50","23:20","23:00","23:30","23:10","23:40","23:20","23:50","23:40","0:05"],
+      [19,"23:00","23:50","23:30","0:15","23:45","0:20","0:00","0:35","0:15","0:45"]
+    ],
+    "2-1번": [
+      [1,"6:00","6:20","6:30","6:50","7:20","7:45","8:00"],
+      [2,"7:30","7:50","8:05","8:20","9:10","9:25","9:55"],
+      [3,"9:20","9:40","9:55","10:10","10:35","10:50","11:20"],
+      [4,"10:40","11:00","11:15","11:30","11:55","12:10","12:35"],
+      [5,"12:00","12:20","12:35","12:50","13:15","13:30","13:55"],
+      [6,"13:20","13:40","13:55","14:10","14:35","14:50","15:15"],
+      [7,"14:40","15:00","15:15","15:30","15:55","16:10","16:35"],
+      [8,"16:00","16:20","16:35","16:50","17:15","17:30","17:55"],
+      [9,"17:20","17:40","17:55","18:10","18:35","18:50","19:15"],
+      [10,"18:40","19:00","19:15","19:30","19:55","20:10","20:35"],
+      [11,"20:00","20:20","20:35","20:50","21:15","21:30","21:55"],
+      [12,"21:20","21:40","21:55","22:10","22:35","22:50","23:15"],
+      [13,"22:40","23:00","23:15","23:30","23:55","0:15","0:30"]
+    ]
+  },
+  saturday: {
+    "99번": [
+      [1,"6:00","6:20","6:15","6:35","6:30","6:50","7:05","7:25"],
+      [2,"6:40","7:00","6:55","7:15","7:10","7:30","7:45","8:05"],
+      [3,"7:40","8:00","7:55","8:15","8:10","8:30","8:45","9:05"],
+      [4,"8:40","9:00","8:55","9:15","9:10","9:30","9:45","10:05"],
+      [5,"10:00","10:30","10:15","10:45","10:30","11:00","11:15","11:45"],
+      [6,"11:00","11:30","11:15","11:45","11:30","12:00","12:15","12:45"],
+      [7,"12:00","12:30","12:15","12:45","12:30","13:00","13:15","13:45"],
+      [8,"13:00","13:30","13:15","13:45","13:30","14:00","14:15","14:45"],
+      [9,"14:00","14:30","14:15","14:45","14:30","15:00","15:15","15:45"],
+      [10,"15:00","15:30","15:15","15:45","15:30","16:00","16:15","16:45"],
+      [11,"16:00","16:30","16:15","16:45","16:30","17:00","17:15","17:45"],
+      [12,"17:00","17:30","17:15","17:45","17:30","18:00","18:15","18:45"],
+      [13,"18:00","18:30","18:15","18:45","18:30","19:00","19:15","19:45"],
+      [14,"19:00","19:30","19:15","19:45","19:30","20:00","20:15","20:45"],
+      [15,"20:00","20:30","20:15","20:45","20:30","21:00","21:15","21:45"],
+      [16,"21:00","21:30","21:15","21:45","21:30","22:00","22:15","22:45"],
+      [17,"22:00","22:30","22:15","22:45","22:30","23:00","23:15","23:45"],
+      [18,"23:00","23:30","23:15","23:45","23:30","23:55","23:55","0:10"],
+      [19,"23:40","23:55","23:50","0:10","0:00","0:20","0:20","0:45"]
+    ],
+    "2-1번": [
+      [1,"6:00","6:20","6:50","7:10","7:30"],
+      [2,"7:50","8:10","8:40","9:00","9:20"],
+      [3,"9:40","10:00","10:30","10:50","11:10"],
+      [4,"11:30","11:50","12:20","12:40","13:00"],
+      [5,"13:20","13:40","14:10","14:30","14:50"],
+      [6,"15:10","15:30","16:00","16:20","16:40"],
+      [7,"17:00","17:20","17:50","18:10","18:30"],
+      [8,"18:50","19:10","19:40","20:00","20:20"],
+      [9,"20:40","21:00","21:30","21:50","22:10"],
+      [10,"22:30","22:50","23:20","23:40","0:00"]
+    ]
+  },
+  holiday: {
+    "99번": [
+      [1,"6:00","6:20","6:20","6:40","7:00","7:30"],
+      [2,"6:50","7:20","7:10","7:40","7:50","8:30"],
+      [3,"7:50","8:20","8:10","8:40","8:50","9:30"],
+      [4,"8:50","9:20","9:10","9:40","9:50","10:30"],
+      [5,"9:50","10:20","10:10","10:40","10:50","11:30"],
+      [6,"10:50","11:20","11:10","11:40","11:50","12:30"],
+      [7,"11:50","12:20","12:10","12:40","12:50","13:30"],
+      [8,"12:50","13:20","13:10","13:40","13:50","14:30"],
+      [9,"13:50","14:20","14:10","14:40","14:50","15:30"],
+      [10,"14:50","15:20","15:10","15:40","15:50","16:30"],
+      [11,"15:50","16:20","16:10","16:40","16:50","17:30"],
+      [12,"16:50","17:20","17:10","17:40","17:50","18:30"],
+      [13,"17:50","18:20","18:10","18:40","18:50","19:30"],
+      [14,"18:50","19:20","19:10","19:40","19:50","20:30"],
+      [15,"19:50","20:20","20:10","20:40","20:50","21:30"],
+      [16,"20:50","21:20","21:10","21:40","21:50","22:30"],
+      [17,"21:50","22:20","22:10","22:40","22:50","23:30"],
+      [18,"22:50","23:20","23:10","23:40","23:50","0:30"]
+    ],
+    "2-1번": [
+      [1,"6:00","6:20","6:50","7:10"],
+      [2,"7:50","8:10","8:40","9:00"],
+      [3,"9:40","10:00","10:30","10:50"],
+      [4,"11:30","11:50","12:20","12:40"],
+      [5,"13:20","13:40","14:10","14:30"],
+      [6,"15:10","15:30","16:00","16:20"],
+      [7,"17:00","17:20","17:50","18:10"],
+      [8,"18:50","19:10","19:40","20:00"],
+      [9,"20:40","21:00","21:30","21:50"],
+      [10,"22:30","22:50","23:20","23:40"]
+    ]
+  }
+};
+
+/* ===== 방향 옵션 ===== */
 const directionOptions = {
   "99번": ["성복역", "상현역"],
   "2-1번": ["죽전역", "구성역"]
 };
 
+/* ===== 유틸 ===== */
+function getDayType(){ const dow=new Date().getDay(); return dow===0?'holiday':(dow===6?'saturday':'weekday'); }
+function getDayLabel(k){ return k==='holiday'?'공휴일':(k==='saturday'?'토요일':'평일'); }
+
+/* ===== UI 로직 ===== */
 function updateDirectionOptions() {
   const route = document.getElementById('routeSelect').value;
   const dirSelect = document.getElementById('directionSelect');
   dirSelect.innerHTML = '';
   (directionOptions[route]||[]).forEach((d,i)=>{
     const opt = document.createElement('option');
-    opt.value = d; opt.textContent = d;
-    if(i===0) opt.selected=true;
+    opt.value = d; opt.textContent = d; if(i===0) opt.selected=true;
     dirSelect.appendChild(opt);
   });
 }
 
-function getDayType(){ const dow=new Date().getDay(); return dow===0?'holiday':(dow===6?'saturday':'weekday'); }
-function getDayLabel(k){ return k==='holiday'?'공휴일':(k==='saturday'?'토요일':'평일'); }
+/* 작은 화면이면 자동으로 간단 보기 */
+function isCompactAuto() {
+  return window.innerWidth <= 480; // 기준은 필요에 따라 조정 가능
+}
 
 function renderTable(){
   const now = new Date();
@@ -145,41 +266,54 @@ function renderTable(){
   const direction = document.getElementById('directionSelect').value;
   const container = document.getElementById('tableContainer');
   const infoBox = document.getElementById('infoBox');
+  const manualCompact = document.getElementById('compactToggle').checked;
   container.innerHTML = '';
 
-  infoBox.textContent = `오늘은 ${now.toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric',weekday:'long'})} (${getDayLabel(dayKey)}), 현재 시각: ${now.toLocaleTimeString('ko-KR')}`;
+  infoBox.textContent =
+    `오늘은 ${now.toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric',weekday:'long'})} `
+    + `(${getDayLabel(dayKey)}), 현재 시각: ${now.toLocaleTimeString('ko-KR')}`;
 
   const data = (timetable[dayKey]||{})[route];
   if(!data || !data.length){ container.textContent='해당 데이터가 없습니다'; return; }
 
-  const colsPerRow = data[0].length;
+  // 방향별 열 인덱스
+  const colsPerRow = data[0].length; // [회차, 1A,1B,2A,2B, ...]
   let dirCols=[];
   if(route==='99번'){
-    const start = (direction==='상현역')?1:2;
+    const start = (direction==='상현역')?1:2; // 상현=홀 / 성복=짝
     for(let i=start;i<colsPerRow;i+=2) dirCols.push(i);
   } else if(route==='2-1번'){
-    const start = (direction==='구성역')?1:2;
+    const start = (direction==='구성역')?1:2; // 구성=홀 / 죽전=짝
     for(let i=start;i<colsPerRow;i+=2) dirCols.push(i);
   }
 
+  // 간단 보기 적용: 앞쪽 N열만 노출
+  const compact = manualCompact || isCompactAuto();
+  const MAX_COMPACT_COLS = 4; // 필요시 조정
+  const showCols = compact ? dirCols.slice(0, Math.min(MAX_COMPACT_COLS, dirCols.length)) : dirCols;
+
   const table=document.createElement('table');
+
+  // 헤더
   const theadRow=document.createElement('tr');
   theadRow.appendChild(Object.assign(document.createElement('th'),{innerText:'회차'}));
-  dirCols.forEach((_,idx)=>
+  showCols.forEach((_,idx)=>
     theadRow.appendChild(Object.assign(document.createElement('th'),{innerText:`${idx+1}호차 ${direction}`}))
   );
   const thead=document.createElement('thead'); thead.appendChild(theadRow);
   table.appendChild(thead);
 
+  // 바디
   const tbody=document.createElement('tbody');
   for(const row of data){
     const tr=document.createElement('tr');
     tr.appendChild(Object.assign(document.createElement('td'),{innerText:row[0]}));
-    dirCols.forEach(c=>tr.appendChild(Object.assign(document.createElement('td'),{innerText:row[c]||''})));
+    showCols.forEach(c=>tr.appendChild(Object.assign(document.createElement('td'),{innerText:row[c]||''})));
     tbody.appendChild(tr);
   }
   table.appendChild(tbody);
   container.appendChild(table);
+
   highlight(table);
 }
 
@@ -215,6 +349,8 @@ renderTable();
 /* 이벤트 */
 document.getElementById('routeSelect').addEventListener('change', ()=>{ updateDirectionOptions(); renderTable(); });
 document.getElementById('directionSelect').addEventListener('change', renderTable);
+document.getElementById('compactToggle').addEventListener('change', renderTable);
+window.addEventListener('resize', ()=>{ renderTable(); }); // 화면 회전/크기변경 시 재판단
 setInterval(renderTable, 30000);
 </script>
 </body>
