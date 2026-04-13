@@ -25,8 +25,7 @@
       align-items:center;
     }
     .selectors label { flex:1 1 45%; min-width:0; font-size: 14px; }
-    .toggles { display:flex; align-items:center; gap:8px; margin-left:auto; flex:0 0 auto; }
-    select { padding:6px 8px; border-radius: 4px; width: 100%; margin-top: 4px; }
+    select { padding:8px; border-radius: 4px; width: 100%; margin-top: 4px; border:none; font-size: 15px; }
 
     /* 실시간 정보창 */
     .info { padding:16px; background:#fff; border-bottom: 2px solid #ddd; }
@@ -58,17 +57,17 @@
     .remaining-min { font-size: 13px; color: #ff5722; font-weight: bold; margin-left: 5px; }
 
     /* 테이블 스타일 */
-    .table-container { padding:8px; overflow-x:auto; background: #fff; }
-    table { width:100%; border-collapse:collapse; min-width: 320px; }
-    th, td { border:1px solid #ccc; padding:8px 2px; text-align:center; font-size: 13px; min-height: 35px; }
+    .table-container { padding:8px; overflow-x:auto; background: #fff; width: 100%; }
+    table { width:100%; border-collapse:collapse; table-layout: auto; }
+    th, td { border:1px solid #ccc; padding:8px 1px; text-align:center; font-size: 13px; white-space: nowrap; }
     th { background:#eee; font-weight: bold; }
     
-    /* 하이라이트 색상 정의 */
-    .cell-prev { background:#c8e6c9 !important; } /* 직전 출발 (초록색) */
-    .cell-next { background:#fff59d !important; font-weight: bold; border: 2px solid #fbc02d !important; } /* 다음 출발 (노란색) */
+    /* 하이라이트 색상 */
+    .cell-prev { background:#c8e6c9 !important; } /* 직전 출발 */
+    .cell-next { background:#fff59d !important; font-weight: bold; border: 2px solid #fbc02d !important; } /* 다음 출발 */
 
     @media (max-width: 480px) {
-      th, td { font-size: 12px; padding: 6px 1px; }
+      th, td { font-size: 11.5px; padding: 7px 0px; }
       .bus-name { font-size: 14px; }
       .departure-time { font-size: 14px; }
     }
@@ -86,10 +85,6 @@
     <label>출발 방향:
       <select id="directionSelect"></select>
     </label>
-    <div class="toggles">
-      <input type="checkbox" id="compactToggle" />
-      <label for="compactToggle" style="color:white; font-size:12px;">열 축소</label>
-    </div>
   </div>
 
   <div class="info" id="infoBox">
@@ -125,10 +120,6 @@ function getDayType(){
   return dow === 0 ? 'holiday' : (dow === 6 ? 'saturday' : 'weekday'); 
 }
 
-function getDayLabel(k){ 
-  return k === 'holiday' ? '공휴일' : (k === 'saturday' ? '토요일' : '평일'); 
-}
-
 function updateDirectionOptions() {
   const route = document.getElementById('routeSelect').value;
   const dirSelect = document.getElementById('directionSelect');
@@ -143,7 +134,6 @@ function updateDirectionOptions() {
 function timeToMins(timeStr) {
   if (!timeStr) return -1;
   const [h, m] = timeStr.split(':').map(Number);
-  // 00시~02시 사이의 시간은 24시 이후로 계산하여 정렬 시 뒤로 가게 함
   let total = h * 60 + m;
   if (h < 4) total += 1440; 
   return total;
@@ -187,11 +177,10 @@ function renderAll() {
   const dayKey = getDayType();
   const activeRoute = document.getElementById('routeSelect').value;
   const activeDir = document.getElementById('directionSelect').value;
-  const isCompact = document.getElementById('compactToggle').checked;
 
   const todayStr = now.toLocaleDateString('ko-KR', { month:'long', day:'numeric', weekday:'short' });
   const timeStr = now.toLocaleTimeString('ko-KR', { hour:'2-digit', minute:'2-digit', hour12: false });
-  document.getElementById('currentTimeDisplay').innerText = `오늘은 ${todayStr} (${getDayLabel(dayKey)}), 현재 ${timeStr}`;
+  document.getElementById('currentTimeDisplay').innerText = `오늘은 ${todayStr} (${dayKey==='holiday'?'공휴일':dayKey==='saturday'?'토요일':'평일'}), 현재 ${timeStr}`;
 
   const nextBusArea = document.getElementById('nextBusArea');
   nextBusArea.innerHTML = '';
@@ -205,10 +194,7 @@ function renderAll() {
     const next = findNextBus(r.name, r.dir);
     const card = document.createElement('div');
     card.className = `bus-info-card ${r.class}`;
-    
-    let timeText = "정보 없음";
-    let remainText = "";
-    
+    let timeText = "정보 없음", remainText = "";
     if(next) {
       let curMins = now.getHours() * 60 + now.getMinutes();
       if (now.getHours() < 4) curMins += 1440;
@@ -216,7 +202,6 @@ function renderAll() {
       timeText = next.str;
       remainText = next.isTomorrow ? "(내일 첫차)" : (diff > 0 ? `${diff}분 남음` : "잠시 후");
     }
-
     card.innerHTML = `
       <div class="bus-name ${r.class}">${r.name} <span style="font-size:11px; color:#666; font-weight:normal;">(${r.dir} 방면)</span></div>
       <div class="bus-time-details">
@@ -242,13 +227,11 @@ function renderAll() {
     for(let i=start; i<colsPerRow; i+=2) dirCols.push(i);
   }
 
-  const showCols = isCompact ? dirCols.slice(0, 3) : dirCols;
-
   const table = document.createElement('table');
   const thead = document.createElement('thead');
   const trH = document.createElement('tr');
   trH.appendChild(Object.assign(document.createElement('th'), { innerText: '회차' }));
-  showCols.forEach((_, idx) => trH.appendChild(Object.assign(document.createElement('th'), { innerText: `${idx + 1}호차` })));
+  dirCols.forEach((_, idx) => trH.appendChild(Object.assign(document.createElement('th'), { innerText: `${idx + 1}호차` })));
   thead.appendChild(trH);
   table.appendChild(thead);
 
@@ -256,7 +239,7 @@ function renderAll() {
   data.forEach(row => {
     const tr = document.createElement('tr');
     tr.appendChild(Object.assign(document.createElement('td'), { innerText: row[0], style: 'background:#f4f4f4; font-weight:bold;' }));
-    showCols.forEach(c => {
+    dirCols.forEach(c => {
       const cell = document.createElement('td');
       cell.innerText = row[c] || '';
       tr.appendChild(cell);
@@ -272,32 +255,23 @@ function renderAll() {
 function highlightTable(table) {
   const now = new Date();
   let curMins = now.getHours() * 60 + now.getMinutes();
-  if (now.getHours() < 4) curMins += 1440; // 자정 이후 처리
+  if (now.getHours() < 4) curMins += 1440;
 
   const rows = table.querySelectorAll('tbody tr');
   let allPoints = [];
-
-  // 1. 표 안의 모든 시간 셀을 추출하여 리스트화
   rows.forEach((tr) => {
     const tds = tr.querySelectorAll('td');
     tds.forEach((td, cIdx) => {
-      if(cIdx === 0) return; // 회차 열 제외
+      if(cIdx === 0) return;
       const mins = timeToMins(td.innerText);
-      if(mins !== -1) {
-        allPoints.push({ td, mins });
-      }
+      if(mins !== -1) allPoints.push({ td, mins });
     });
   });
 
   if(allPoints.length === 0) return;
-
-  // 2. 시간순 정렬
   allPoints.sort((a, b) => a.mins - b.mins);
 
-  // 3. 이전/다음 셀 찾기
-  let prevPoint = null;
-  let nextPoint = null;
-
+  let prevPoint = null, nextPoint = null;
   for (let i = 0; i < allPoints.length; i++) {
     if (allPoints[i].mins > curMins) {
       nextPoint = allPoints[i];
@@ -305,14 +279,8 @@ function highlightTable(table) {
       break;
     }
   }
+  if (!nextPoint) { nextPoint = allPoints[0]; prevPoint = allPoints[allPoints.length - 1]; }
 
-  // 만약 모든 차편이 끝났다면 (내일 첫차 대기)
-  if (!nextPoint) {
-    nextPoint = allPoints[0]; // 내일 첫차
-    prevPoint = allPoints[allPoints.length - 1]; // 오늘 막차
-  }
-
-  // 4. 클래스 제거 및 적용
   allPoints.forEach(p => p.td.classList.remove('cell-prev', 'cell-next'));
   if (prevPoint) prevPoint.td.classList.add('cell-prev');
   if (nextPoint) nextPoint.td.classList.add('cell-next');
@@ -323,8 +291,7 @@ renderAll();
 
 document.getElementById('routeSelect').addEventListener('change', () => { updateDirectionOptions(); renderAll(); });
 document.getElementById('directionSelect').addEventListener('change', renderAll);
-document.getElementById('compactToggle').addEventListener('change', renderAll);
-setInterval(renderAll, 30000); // 30초마다 갱신
+setInterval(renderAll, 30000);
 </script>
 </body>
 </html>
