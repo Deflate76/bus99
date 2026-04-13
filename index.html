@@ -1,14 +1,12 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-
-<link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
-<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-<link rel="shortcut icon" href="/favicon.ico" />
-<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-<meta name="apple-mobile-web-app-title" content="버스출발" />
-<link rel="manifest" href="/site.webmanifest" />
-  
+  <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="shortcut icon" href="/favicon.ico" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-title" content="버스출발" />
+  <link rel="manifest" href="/site.webmanifest" />
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
   <meta name="HandheldFriendly" content="true" />
@@ -32,41 +30,40 @@
       align-items:center;
     }
     .selectors label {
-      flex:1 1 48%;
+      flex:1 1 45%;
       min-width:0; 
     }
     .toggles {
       display:flex;
       align-items:center;
-      gap:10px;
+      gap:8px;
       margin-left:auto;
       flex:0 0 auto;
     }
-    .toggles label { font-size:14px; }
-    select { padding:6px 8px }
+    .toggles label { font-size:13px; }
+    select { padding:6px 8px; border-radius: 4px; }
     .info { padding:12px 16px; background:#eee; color:#222; border-bottom: 1px solid #ccc; }
 
     .table-container {
-      padding:16px;
+      padding:8px; /* 패딩 축소 */
       overflow-x:auto;
       -webkit-overflow-scrolling: touch;
       width:100%;
-      max-width:100vw;
-      display:block;
     }
 
     table {
       width:100%;
       border-collapse:collapse;
-      table-layout:fixed;
+      /* table-layout: fixed 삭제 - 내용물에 맞게 자동 조절 */
     }
     th, td {
       border:1px solid #999;
-      padding:6px;
+      padding:6px 2px; /* 좌우 패딩 최소화 */
       text-align:center;
-      white-space:nowrap;
+      white-space:nowrap; /* 시간 안잘리게 */
+      font-size: 13px;
     }
-    th { background:#eee }
+    th { background:#eee; font-weight: bold; }
 
     /* 데스크톱 sticky */
     @media (min-width: 769px) {
@@ -79,42 +76,36 @@
       }
     }
 
-    /* 모바일 최적화 */
+    /* 모바일 최적화 - 5개 열을 다 보여주기 위한 설정 */
     @media (max-width: 768px) {
-      html, body { width:100%; max-width:100vw; overflow-x:hidden; }
       body { font-size: 14px; }
-      .selectors { gap:8px; }
       .selectors label { width: calc(50% - 8px); }
-      .selectors select { width: 100%; padding:10px; font-size:16px; }
-      .info { font-size: 13px; line-height: 1.5; }
-      table { font-size: 13px; }
-      th, td { padding: 8px 10px; }
-      table thead th, table th:first-child, table td:first-child { position: static !important; }
+      .selectors select { width: 100%; padding:8px; font-size:15px; }
+      .info { font-size: 13px; line-height: 1.4; }
+      
+      /* 5호차까지 다 보이도록 글자 크기 및 여백 조정 */
+      th, td { 
+        font-size: 12px; 
+        padding: 8px 1px; 
+      }
     }
 
-    @media (max-width: 420px) {
-      body { font-size: 13px; }
-      .selectors label { width:100%; }
-      .info { font-size: 12px; }
-      table { font-size: 12px; }
-      th, td { padding: 6px 8px; }
+    @media (max-width: 380px) {
+      th, td { font-size: 11px; } /* 아주 좁은 화면 대응 */
     }
-
-    img, table, select { max-width:100%; }
 
     .cell-prev { background:#c8e6c9 !important } /* 이전 버스 (초록색) */
     .cell-next { background:#fff59d !important } /* 다음 버스 (노란색) */
     
-    /* 강조 텍스트 스타일 */
     .next-bus-highlight {
       display: block;
       margin-top: 6px;
-      font-size: 1.15em;
+      font-size: 1.1em;
       color: #d32f2f;
     }
     .time-left {
       color: #007bff;
-      margin-left: 8px;
+      margin-left: 6px;
     }
   </style>
 </head>
@@ -132,7 +123,7 @@
 
     <div class="toggles">
       <input type="checkbox" id="compactToggle" />
-      <label for="compactToggle">간단 보기(열 축소)</label>
+      <label for="compactToggle">열 축소</label>
     </div>
   </div>
 
@@ -140,7 +131,6 @@
   <div class="table-container" id="tableContainer"></div>
 
 <script>
-/* ===================== 시간표 원본 데이터 ===================== */
 const timetable = {
   weekday: {
     "99번": [
@@ -256,10 +246,8 @@ const directionOptions = {
   "2-1번": ["죽전역", "구성역"]
 };
 
-/* ===== 유틸 ===== */
 function getDayType(){ const dow=new Date().getDay(); return dow===0?'holiday':(dow===6?'saturday':'weekday'); }
 function getDayLabel(k){ return k==='holiday'?'공휴일':(k==='saturday'?'토요일':'평일'); }
-function isCompactAuto() { return window.innerWidth <= 480; }
 
 function updateDirectionOptions() {
   const route = document.getElementById('routeSelect').value;
@@ -272,7 +260,6 @@ function updateDirectionOptions() {
   });
 }
 
-/* ===== 메인 렌더링 함수 (수정됨) ===== */
 function renderTable(){
   const now = new Date();
   const dayKey = getDayType();
@@ -294,7 +281,6 @@ function renderTable(){
     return; 
   }
 
-  // 방향별 열 인덱스 추출
   const colsPerRow = data[0].length;
   let dirCols=[];
   if(route==='99번'){
@@ -305,10 +291,8 @@ function renderTable(){
     for(let i=start;i<colsPerRow;i+=2) dirCols.push(i);
   }
 
-  // --- 다음 버스 시간 찾기 및 남은 시간 계산 로직 ---
   const curMins = now.getHours() * 60 + now.getMinutes();
   let nextBusTime = "";
-  let nextBusMins = 0;
   let allTimes = [];
 
   for(const row of data) {
@@ -332,22 +316,21 @@ function renderTable(){
     nextBusTime = allTimes[0].str + " (내일 첫차)";
   }
 
-  // 상단 정보창 최종 업데이트 (굵게 표시)
   if(nextBusTime) {
-    infoHtml += `<b class="next-bus-highlight">다음 버스 출발시간은 : ${nextBusTime} <span class="time-left">${remainingText}</span></b>`;
+    infoHtml += `<b class="next-bus-highlight">다음 버스 출발시간 : ${nextBusTime} <span class="time-left">${remainingText}</span></b>`;
   }
   infoBox.innerHTML = infoHtml;
 
-  // 테이블 생성 로직
-  const compact = manualCompact || isCompactAuto();
-  const MAX_COMPACT_COLS = 4;
-  const showCols = compact ? dirCols.slice(0, Math.min(MAX_COMPACT_COLS, dirCols.length)) : dirCols;
+  const showCols = manualCompact ? dirCols.slice(0, 3) : dirCols;
 
   const table = document.createElement('table');
   const thead = document.createElement('thead');
   const trH = document.createElement('tr');
   trH.appendChild(Object.assign(document.createElement('th'),{innerText:'회차'}));
-  showCols.forEach((_,idx)=> trH.appendChild(Object.assign(document.createElement('th'),{innerText:`${idx+1}호차 ${direction}`})) );
+  
+  // 헤더 텍스트 수정: 'n호차 역이름' -> 'n호차'
+  showCols.forEach((_,idx)=> trH.appendChild(Object.assign(document.createElement('th'),{innerText:`${idx+1}호차`})) );
+  
   thead.appendChild(trH);
   table.appendChild(thead);
 
@@ -393,7 +376,6 @@ function highlight(table){
   if(nc) nc.classList.add('cell-next');
 }
 
-/* 초기화 및 이벤트 등록 */
 updateDirectionOptions();
 renderTable();
 
@@ -401,7 +383,7 @@ document.getElementById('routeSelect').addEventListener('change', ()=>{ updateDi
 document.getElementById('directionSelect').addEventListener('change', renderTable);
 document.getElementById('compactToggle').addEventListener('change', renderTable);
 window.addEventListener('resize', renderTable);
-setInterval(renderTable, 30000); // 30초마다 갱신
+setInterval(renderTable, 30000); 
 </script>
 </body>
 </html>
