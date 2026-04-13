@@ -60,18 +60,18 @@
     /* 테이블 스타일 */
     .table-container { padding:8px; overflow-x:auto; background: #fff; }
     table { width:100%; border-collapse:collapse; min-width: 320px; }
-    th, td { border:1px solid #ccc; padding:8px 2px; text-align:center; font-size: 13px; }
+    th, td { border:1px solid #ccc; padding:8px 2px; text-align:center; font-size: 13px; min-height: 35px; }
     th { background:#eee; font-weight: bold; }
     
-    /* 모바일 최적화: 5호차까지 다 보이도록 간격 조정 */
+    /* 하이라이트 색상 정의 */
+    .cell-prev { background:#c8e6c9 !important; } /* 직전 출발 (초록색) */
+    .cell-next { background:#fff59d !important; font-weight: bold; border: 2px solid #fbc02d !important; } /* 다음 출발 (노란색) */
+
     @media (max-width: 480px) {
       th, td { font-size: 12px; padding: 6px 1px; }
       .bus-name { font-size: 14px; }
       .departure-time { font-size: 14px; }
     }
-
-    .cell-prev { background:#c8e6c9 !important; } /* 직전 버스 */
-    .cell-next { background:#fff59d !important; font-weight: bold; } /* 다음 버스 */
   </style>
 </head>
 <body>
@@ -94,14 +94,12 @@
 
   <div class="info" id="infoBox">
     <div class="current-time" id="currentTimeDisplay">로딩 중...</div>
-    <div class="next-bus-area" id="nextBusArea">
-      </div>
+    <div class="next-bus-area" id="nextBusArea"></div>
   </div>
 
   <div class="table-container" id="tableContainer"></div>
 
 <script>
-/* 시간표 데이터 */
 const timetable = {
   weekday: {
     "99번": [[1,"6:10","6:40","6:20","6:50","6:30","7:00","6:40","7:10","7:00","7:30"],[2,"6:50","7:20","7:00","7:30","7:10","7:40","7:20","7:50","7:40","8:05"],[3,"7:50","8:20","8:00","8:30","8:10","8:40","8:20","8:50","8:40","9:05"],[4,"8:50","9:20","9:00","9:30","9:10","9:40","9:20","9:50","9:40","10:05"],[5,"9:50","10:20","10:00","10:30","10:10","10:40","10:20","10:50","10:40","11:05"],[6,"10:50","11:20","11:00","11:30","11:10","11:40","11:20","11:50","11:40","12:05"],[7,"11:50","12:20","12:00","12:30","12:10","12:40","12:20","12:50","12:40","13:05"],[8,"12:50","13:20","13:00","13:30","13:10","13:40","13:20","13:50","13:40","14:05"],[9,"13:50","14:20","14:00","14:30","14:10","14:40","14:20","14:50","14:40","15:05"],[10,"14:50","15:20","15:00","15:30","15:10","15:40","15:20","15:50","15:40","16:05"],[11,"15:50","16:20","16:00","16:30","16:10","16:40","16:20","16:50","16:40","17:05"],[12,"16:50","17:20","17:00","17:30","17:10","17:40","17:20","17:50","17:40","18:05"],[13,"17:50","18:20","18:00","18:30","18:10","18:40","18:20","18:50","18:40","19:05"],[14,"18:50","19:20","19:00","19:30","19:10","19:40","19:20","19:50","19:40","20:05"],[15,"19:50","20:20","20:00","20:30","20:10","20:40","20:20","20:50","20:40","21:05"],[16,"20:50","21:20","21:00","21:30","21:10","21:40","21:20","21:50","21:40","22:05"],[17,"21:50","22:20","22:00","22:30","22:10","22:40","22:20","22:50","22:40","23:05"],[18,"22:50","23:20","23:00","23:30","23:10","23:40","23:20","23:50","23:40","0:05"],[19,"23:00","23:50","23:30","0:15","23:45","0:20","0:00","0:35","0:15","0:45"]],
@@ -122,7 +120,6 @@ const directionOptions = {
   "2-1번": ["죽전역", "구성역"]
 };
 
-/* 유틸리티 함수 */
 function getDayType(){ 
   const dow = new Date().getDay(); 
   return dow === 0 ? 'holiday' : (dow === 6 ? 'saturday' : 'weekday'); 
@@ -143,17 +140,26 @@ function updateDirectionOptions() {
   });
 }
 
-/* 특정 노선/방향의 다음 버스 찾기 */
+function timeToMins(timeStr) {
+  if (!timeStr) return -1;
+  const [h, m] = timeStr.split(':').map(Number);
+  // 00시~02시 사이의 시간은 24시 이후로 계산하여 정렬 시 뒤로 가게 함
+  let total = h * 60 + m;
+  if (h < 4) total += 1440; 
+  return total;
+}
+
 function findNextBus(route, direction) {
   const now = new Date();
   const dayKey = getDayType();
   const data = (timetable[dayKey] || {})[route];
   if(!data) return null;
 
-  const curMins = now.getHours() * 60 + now.getMinutes();
+  let curMins = now.getHours() * 60 + now.getMinutes();
+  if (now.getHours() < 4) curMins += 1440;
+
   const colsPerRow = data[0].length;
   let dirCols = [];
-  
   if(route === '99번') {
     const start = (direction === '상현역') ? 1 : 2;
     for(let i=start; i<colsPerRow; i+=2) dirCols.push(i);
@@ -166,18 +172,16 @@ function findNextBus(route, direction) {
   data.forEach(row => {
     dirCols.forEach(c => {
       const t = row[c];
-      if(t && /^(\d{1,2}):(\d{2})$/.test(t)) {
-        const [h, m] = t.split(':').map(Number);
-        let mins = h * 60 + m;
-        allTimes.push({ str: t, mins: mins });
-      }
+      const mins = timeToMins(t);
+      if(mins !== -1) allTimes.push({ str: t, mins: mins });
     });
   });
   allTimes.sort((a, b) => a.mins - b.mins);
-  return allTimes.find(t => t.mins > curMins) || { str: allTimes[0].str, mins: allTimes[0].mins + 1440, isTomorrow: true };
+  
+  const next = allTimes.find(t => t.mins > curMins);
+  return next || { str: allTimes[0].str, mins: allTimes[0].mins + 1440, isTomorrow: true };
 }
 
-/* 메인 렌더링 */
 function renderAll() {
   const now = new Date();
   const dayKey = getDayType();
@@ -185,12 +189,10 @@ function renderAll() {
   const activeDir = document.getElementById('directionSelect').value;
   const isCompact = document.getElementById('compactToggle').checked;
 
-  // 1. 현재 시간 표시
   const todayStr = now.toLocaleDateString('ko-KR', { month:'long', day:'numeric', weekday:'short' });
   const timeStr = now.toLocaleTimeString('ko-KR', { hour:'2-digit', minute:'2-digit', hour12: false });
   document.getElementById('currentTimeDisplay').innerText = `오늘은 ${todayStr} (${getDayLabel(dayKey)}), 현재 ${timeStr}`;
 
-  // 2. 상단 두 줄 정보 (99번 & 2-1번)
   const nextBusArea = document.getElementById('nextBusArea');
   nextBusArea.innerHTML = '';
 
@@ -204,11 +206,12 @@ function renderAll() {
     const card = document.createElement('div');
     card.className = `bus-info-card ${r.class}`;
     
-    let timeText = "운행 종료";
+    let timeText = "정보 없음";
     let remainText = "";
     
     if(next) {
-      const curMins = now.getHours() * 60 + now.getMinutes();
+      let curMins = now.getHours() * 60 + now.getMinutes();
+      if (now.getHours() < 4) curMins += 1440;
       const diff = next.mins - curMins;
       timeText = next.str;
       remainText = next.isTomorrow ? "(내일 첫차)" : (diff > 0 ? `${diff}분 남음` : "잠시 후");
@@ -224,7 +227,6 @@ function renderAll() {
     nextBusArea.appendChild(card);
   });
 
-  // 3. 테이블 렌더링
   const container = document.getElementById('tableContainer');
   container.innerHTML = '';
   const data = (timetable[dayKey] || {})[activeRoute];
@@ -264,47 +266,65 @@ function renderAll() {
   table.appendChild(tbody);
   container.appendChild(table);
 
-  // 하이라이트 적용
   highlightTable(table);
 }
 
 function highlightTable(table) {
   const now = new Date();
-  const cur = now.getHours() * 60 + now.getMinutes();
-  const rows = table.querySelectorAll('tbody tr');
-  const pts = [];
+  let curMins = now.getHours() * 60 + now.getMinutes();
+  if (now.getHours() < 4) curMins += 1440; // 자정 이후 처리
 
-  rows.forEach((tr, rIdx) => {
+  const rows = table.querySelectorAll('tbody tr');
+  let allPoints = [];
+
+  // 1. 표 안의 모든 시간 셀을 추출하여 리스트화
+  rows.forEach((tr) => {
     const tds = tr.querySelectorAll('td');
     tds.forEach((td, cIdx) => {
-      if(cIdx === 0) return;
-      const m = td.innerText.match(/^(\d{1,2}):(\d{2})$/);
-      if(m) {
-        pts.push({ td, mins: parseInt(m[1]) * 60 + parseInt(m[2]) });
+      if(cIdx === 0) return; // 회차 열 제외
+      const mins = timeToMins(td.innerText);
+      if(mins !== -1) {
+        allPoints.push({ td, mins });
       }
     });
   });
 
-  if(pts.length === 0) return;
-  pts.sort((a, b) => a.mins - b.mins);
+  if(allPoints.length === 0) return;
 
-  let prev = null, next = null;
-  for(const p of pts) {
-    if(p.mins <= cur) prev = p;
-    if(p.mins > cur) { next = p; break; }
+  // 2. 시간순 정렬
+  allPoints.sort((a, b) => a.mins - b.mins);
+
+  // 3. 이전/다음 셀 찾기
+  let prevPoint = null;
+  let nextPoint = null;
+
+  for (let i = 0; i < allPoints.length; i++) {
+    if (allPoints[i].mins > curMins) {
+      nextPoint = allPoints[i];
+      prevPoint = allPoints[i-1] || null;
+      break;
+    }
   }
-  if(prev) prev.td.classList.add('cell-prev');
-  if(next) next.td.classList.add('cell-next');
+
+  // 만약 모든 차편이 끝났다면 (내일 첫차 대기)
+  if (!nextPoint) {
+    nextPoint = allPoints[0]; // 내일 첫차
+    prevPoint = allPoints[allPoints.length - 1]; // 오늘 막차
+  }
+
+  // 4. 클래스 제거 및 적용
+  allPoints.forEach(p => p.td.classList.remove('cell-prev', 'cell-next'));
+  if (prevPoint) prevPoint.td.classList.add('cell-prev');
+  if (nextPoint) nextPoint.td.classList.add('cell-next');
 }
 
-/* 초기화 및 이벤트 리스너 */
 updateDirectionOptions();
 renderAll();
 
 document.getElementById('routeSelect').addEventListener('change', () => { updateDirectionOptions(); renderAll(); });
 document.getElementById('directionSelect').addEventListener('change', renderAll);
 document.getElementById('compactToggle').addEventListener('change', renderAll);
-setInterval(renderAll, 30000); // 30초마다 자동 갱신
+setInterval(renderAll, 30000); // 30초마다 갱신
 </script>
 </body>
 </html>
