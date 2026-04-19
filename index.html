@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
   <title>버스 출발 시간표</title>
-  <meta name="description" content="99번, 801번, 2-1번 버스 출발 시간표를 모바일 홈 화면에 설치해 빠르게 확인하세요." />
+  <meta name="description" content="99번, 801번, 2-1번, 58번 버스 출발 시간표를 모바일 홈 화면에 설치해 빠르게 확인하세요." />
   <meta name="theme-color" content="#ffffff" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -34,11 +34,13 @@
     .bus-info-card.route-99 { border-left-color: #d32f2f; }
     .bus-info-card.route-801 { border-left-color: #388e3c; }
     .bus-info-card.route-21 { border-left-color: #1976d2; }
+    .bus-info-card.route-58 { border-left-color: #8e24aa; } /* 58번: 보라색 테마 */
     
     .bus-name { font-weight: bold; font-size: 16px; }
     .bus-name.route-99 { color: #d32f2f; }
     .bus-name.route-801 { color: #388e3c; }
     .bus-name.route-21 { color: #1976d2; }
+    .bus-name.route-58 { color: #8e24aa; }
     
     .bus-time-details { text-align: right; }
     .departure-time { font-size: 16px; font-weight: bold; color: #222; }
@@ -61,6 +63,7 @@
 
   <script src="data_99_801.js"></script>
   <script src="data_2_1.js"></script>
+  <script src="data_58.js"></script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4147840233181777"
      crossorigin="anonymous"></script>
   
@@ -73,6 +76,7 @@
         <option value="99번" selected>99번</option>
         <option value="801번">801번</option>
         <option value="2-1번">2-1번</option>
+        <option value="58번">58번</option>
       </select>
     </label>
     <label>출발 방향:
@@ -95,10 +99,10 @@ let prevSelectedRoute = "";
 let prevSelectedDir = "";
 
 const directionOptions = {
-  // 99번의 성복역을 배열의 첫 번째로 이동시켜 기본값으로 설정
   "99번": ["성복역", "상현역"],
   "801번": ["상현역", "성복역"],
-  "2-1번": ["구성역", "죽전역"]
+  "2-1번": ["구성역", "죽전역"],
+  "58번": ["성복역", "구성역"] // 58번 추가
 };
 
 function parseFlatData(flatArray) {
@@ -162,6 +166,10 @@ function loadTimetableData() {
     if (typeof rawData99_801 !== 'undefined') {
       parseFlatData(rawData99_801);
     }
+    // 58번 데이터 파싱 호출
+    if (typeof rawData58 !== 'undefined') {
+      parseFlatData(rawData58);
+    }
 
     updateDirectionOptions();
     
@@ -184,7 +192,7 @@ function loadTimetableData() {
       const newRoute = routeSelect.value;
       const newDir = directionSelect.value;
       
-      // 801번 & 성복역 조합 시도 시 롤백
+      // 801번 & 성복역 조합 시도 시 롤백 (기존 룰 유지)
       if (newRoute === '801번' && newDir === '성복역') {
         alert(`선택하신 ${newRoute} 버스는 ${newDir}에서 출발하지 않습니다.`);
         routeSelect.value = tempRoute; // 이전 노선으로 되돌리기
@@ -204,7 +212,7 @@ function loadTimetableData() {
       const newRoute = routeSelect.value;
       const newDir = directionSelect.value;
       
-      // 801번 & 성복역 조합 시도 시 롤백
+      // 801번 & 성복역 조합 시도 시 롤백 (기존 룰 유지)
       if (newRoute === '801번' && newDir === '성복역') {
         alert(`선택하신 ${newRoute} 버스는 ${newDir}에서 출발하지 않습니다.`);
         directionSelect.value = prevSelectedDir; // 이전 방향으로 되돌리기
@@ -315,16 +323,20 @@ function renderAll() {
   const allRoutes = [
     { name: '99번', class: 'route-99', dir: (activeRoute === '99번' ? activeDir : directionOptions['99번'][0]) },
     { name: '801번', class: 'route-801', dir: (activeRoute === '801번' ? activeDir : directionOptions['801번'][0]) },
-    { name: '2-1번', class: 'route-21', dir: (activeRoute === '2-1번' ? activeDir : directionOptions['2-1번'][0]) }
+    { name: '2-1번', class: 'route-21', dir: (activeRoute === '2-1번' ? activeDir : directionOptions['2-1번'][0]) },
+    { name: '58번', class: 'route-58', dir: (activeRoute === '58번' ? activeDir : directionOptions['58번'][0]) }
   ];
 
+  // 58번이 성복, 구성 선택시에만 나타나도록 필터 조건 추가
   const routesToShow = allRoutes.filter(r => {
     if (activeDir.includes('상현')) {
       return r.name === '99번' || r.name === '801번';
     } else if (activeDir.includes('성복')) {
-      return r.name === '99번'; 
-    } else if (activeDir.includes('구성') || activeDir.includes('죽전')) {
+      return r.name === '99번' || r.name === '58번'; 
+    } else if (activeDir.includes('죽전')) {
       return r.name === '2-1번';
+    } else if (activeDir.includes('구성')) {
+      return r.name === '2-1번' || r.name === '58번';
     }
     return true; 
   });
