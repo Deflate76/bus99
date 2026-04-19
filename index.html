@@ -27,10 +27,7 @@
     select { padding:8px; border-radius: 4px; width: 100%; margin-top: 4px; border:none; font-size: 15px; }
 
     .info { padding:16px; background:#fff; border-bottom: 2px solid #ddd; }
-    
-    /* 현재 시간 표시 영역: 전체 볼드체 적용 */
     .current-time { font-size: 14px; font-weight: bold; margin-bottom: 10px; color: #000; }
-    
     .next-bus-area { display: flex; flex-direction: column; gap: 8px; }
     
     .bus-info-card { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-radius: 8px; background: #f9f9f9; border-left: 5px solid #ccc; }
@@ -64,9 +61,6 @@
 
   <script src="data_99_801.js"></script>
   <script src="data_2_1.js"></script>
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4147840233181777"
-     crossorigin="anonymous"></script>
-  
 </head>
 <body>
 
@@ -92,6 +86,10 @@
 
 <script>
 let timetable = { weekday: {}, saturday: {}, holiday: {} };
+
+// 사용자의 직전 선택을 기억하기 위한 상태 변수
+let prevSelectedRoute = "";
+let prevSelectedDir = "";
 
 const directionOptions = {
   "99번": ["상현역", "성복역"],
@@ -162,13 +160,59 @@ function loadTimetableData() {
     }
 
     updateDirectionOptions();
+    
+    const routeSelect = document.getElementById('routeSelect');
+    const directionSelect = document.getElementById('directionSelect');
+    
+    // 초기 로딩 시 상태 저장
+    prevSelectedRoute = routeSelect.value;
+    prevSelectedDir = directionSelect.value;
+    
     renderAll();
 
-    document.getElementById('routeSelect').addEventListener('change', () => { 
+    // 노선 선택 변경 시 처리 로직
+    routeSelect.addEventListener('change', () => { 
+      const tempRoute = prevSelectedRoute;
+      const tempDir = prevSelectedDir;
+      
       updateDirectionOptions(); 
+      
+      const newRoute = routeSelect.value;
+      const newDir = directionSelect.value;
+      
+      // 801번 & 성복역 조합 시도 시 롤백
+      if (newRoute === '801번' && newDir === '성복역') {
+        alert(`선택하신 ${newRoute} 버스는 ${newDir}에서 출발하지 않습니다.`);
+        routeSelect.value = tempRoute; // 이전 노선으로 되돌리기
+        updateDirectionOptions();      // 방향 옵션도 이전 노선에 맞게 다시 복구
+        directionSelect.value = tempDir; // 이전 방향으로 되돌리기
+        return; // 화면을 다시 그리지 않고 종료
+      }
+      
+      // 정상적인 변경일 경우 상태 업데이트 및 렌더링
+      prevSelectedRoute = routeSelect.value;
+      prevSelectedDir = directionSelect.value;
       renderAll(); 
     });
-    document.getElementById('directionSelect').addEventListener('change', renderAll);
+
+    // 출발 방향 선택 변경 시 처리 로직
+    directionSelect.addEventListener('change', () => {
+      const newRoute = routeSelect.value;
+      const newDir = directionSelect.value;
+      
+      // 801번 & 성복역 조합 시도 시 롤백
+      if (newRoute === '801번' && newDir === '성복역') {
+        alert(`선택하신 ${newRoute} 버스는 ${newDir}에서 출발하지 않습니다.`);
+        directionSelect.value = prevSelectedDir; // 이전 방향으로 되돌리기
+        return; // 화면을 다시 그리지 않고 종료
+      }
+      
+      // 정상적인 변경일 경우 상태 업데이트 및 렌더링
+      prevSelectedRoute = routeSelect.value;
+      prevSelectedDir = directionSelect.value;
+      renderAll();
+    });
+
     setInterval(renderAll, 30000);
 
   } catch (error) {
@@ -245,23 +289,20 @@ function renderAll() {
   const activeRoute = document.getElementById('routeSelect').value;
   const activeDir = document.getElementById('directionSelect').value;
 
-  // 날짜 및 시간 포맷팅 (요일 정보는 커스텀 색상을 위해 별도로 처리)
   const dateStr = now.toLocaleDateString('ko-KR', { month:'long', day:'numeric' });
   const timeStr = now.toLocaleTimeString('ko-KR', { hour:'2-digit', minute:'2-digit', hour12: false });
   
-  // 요일별 텍스트 및 색상 결정
   let dayText = '평일';
-  let dayColor = '#000'; // 검은색
+  let dayColor = '#000';
   
   if (dayKey === 'holiday') {
     dayText = now.getDay() === 0 ? '일요일' : '공휴일';
-    dayColor = '#d32f2f'; // 붉은색
+    dayColor = '#d32f2f'; 
   } else if (dayKey === 'saturday') {
     dayText = '토요일';
-    dayColor = '#1976d2'; // 파란색
+    dayColor = '#1976d2'; 
   }
 
-  // innerHTML로 각 요소에 색상 적용 (상위 클래스 .current-time에 볼드체가 적용되어 있음)
   document.getElementById('currentTimeDisplay').innerHTML = `오늘은 <span style="color:#000;">${dateStr}</span> (<span style="color:${dayColor};">${dayText}</span>), 현재 <span style="color:#000;">${timeStr}</span>`;
 
   const nextBusArea = document.getElementById('nextBusArea');
