@@ -94,6 +94,7 @@ const directionOptions = {
 };
 
 // 올려주신 Flat Object 데이터를 표(2차원 배열) 형식으로 변환하는 핵심 로직
+// 올려주신 Flat Object 데이터를 표(2차원 배열) 형식으로 변환하는 핵심 로직
 function parseFlatData(flatArray) {
   const dayMap = { "평일": "weekday", "토요일": "saturday", "공휴일": "holiday" };
   
@@ -107,8 +108,11 @@ function parseFlatData(flatArray) {
     const dayKey = dayMap[item.DayKind];
     if (!dayKey) return;
     
-    let routeName = item.버스;
-    if (!routeName.endsWith("번")) routeName += "번"; // "2-1" -> "2-1번"
+    // [가장 강력한 수정 부분] 값이 비어있어도, 숫자여도 무조건 안전한 글자로 바꿉니다.
+    let routeName = item.버스 !== undefined && item.버스 !== null ? String(item.버스) : "";
+    if (routeName !== "" && !routeName.endsWith("번")) {
+      routeName += "번";
+    }
 
     const startNode = item.StartFrom;
     const round = parseInt(item.회차);
