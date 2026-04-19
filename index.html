@@ -70,9 +70,9 @@
   <div class="selectors">
     <label>노선 선택:
       <select id="routeSelect">
-        <option value="99번">99번</option>
+        <option value="99번" selected>99번</option>
         <option value="801번">801번</option>
-        <option value="2-1번" selected>2-1번</option>
+        <option value="2-1번">2-1번</option>
       </select>
     </label>
     <label>출발 방향:
@@ -95,7 +95,8 @@ let prevSelectedRoute = "";
 let prevSelectedDir = "";
 
 const directionOptions = {
-  "99번": ["상현역", "성복역"],
+  // 99번의 성복역을 배열의 첫 번째로 이동시켜 기본값으로 설정
+  "99번": ["성복역", "상현역"],
   "801번": ["상현역", "성복역"],
   "2-1번": ["구성역", "죽전역"]
 };
