@@ -260,10 +260,12 @@ function renderAll() {
     { name: '2-1번', class: 'route-21', dir: (activeRoute === '2-1번' ? activeDir : directionOptions['2-1번'][0]) }
   ];
 
-  // 방향에 따른 필터링: 상현/성복일 때는 99, 801만, 구성/죽전일 때는 2-1만 표시
+  // 방향에 따른 필터링 세분화 (상현/성복 분리)
   const routesToShow = allRoutes.filter(r => {
-    if (activeDir.includes('상현') || activeDir.includes('성복')) {
+    if (activeDir.includes('상현')) {
       return r.name === '99번' || r.name === '801번';
+    } else if (activeDir.includes('성복')) {
+      return r.name === '99번'; // 성복역일 때는 99번만 표시 (801번 제외)
     } else if (activeDir.includes('구성') || activeDir.includes('죽전')) {
       return r.name === '2-1번';
     }
@@ -281,7 +283,6 @@ function renderAll() {
     const diff = next.mins - curMins;
     const remainText = next.isTomorrow ? "(내일 첫차)" : (diff > 0 ? `${diff}분 남음` : "잠시 후");
     
-    // "방면"을 "출발"로 변경
     card.innerHTML = `
       <div class="bus-name ${r.class}">${r.name} <span style="font-size:11px; color:#666; font-weight:normal;">(${r.dir} 출발)</span></div>
       <div class="bus-time-details">
