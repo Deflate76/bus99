@@ -1,445 +1,416 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
-  <title>버스 출발 시간표</title>
-  <meta name="description" content="99번, 801번, 2-1번, 58번 버스 출발 시간표를 모바일 홈 화면에 설치해 빠르게 확인하세요." />
-  <meta name="theme-color" content="#ffffff" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <meta name="apple-mobile-web-app-title" content="버스출발" />
-  
-  <link rel="manifest" href="/site.webmanifest" />
-  <link rel="icon" href="/favicon.ico" sizes="any" />
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-  <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-  
-  <style>
-    *, *::before, *::after { box-sizing: border-box; }
-    html { -webkit-text-size-adjust: 100%; }
-    body { font-family: Arial, Helvetica, "Noto Sans KR", system-ui; background:#f5f5f5; margin:0; color: #333; }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+  <title>버스 출발 시간표</title>
+  <meta name="description" content="99번, 801번, 2-1번, 58번 버스 출발 시간표를 모바일 홈 화면에 설치해 빠르게 확인하세요." />
+  <meta name="theme-color" content="#ffffff" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="버스출발" />
+  
+  <link rel="manifest" href="/site.webmanifest" />
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+  
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body { font-family: Arial, Helvetica, "Noto Sans KR", system-ui; background:#f5f5f5; margin:0; color: #333; }
 
-    .selectors { display:flex; flex-wrap:wrap; gap:12px; padding:12px 16px; background:#333; color:#fff; align-items:center; }
-    .selectors label { flex:1 1 45%; min-width:0; font-size: 14px; }
-    select { padding:8px; border-radius: 4px; width: 100%; margin-top: 4px; border:none; font-size: 15px; }
+    .selectors { display:flex; flex-wrap:wrap; gap:12px; padding:12px 16px; background:#333; color:#fff; align-items:center; }
+    .selectors label { flex:1 1 45%; min-width:0; font-size: 14px; }
+    select { padding:8px; border-radius: 4px; width: 100%; margin-top: 4px; border:none; font-size: 15px; }
 
-    .info { padding:16px; background:#fff; border-bottom: 2px solid #ddd; }
-    .current-time { font-size: 14px; font-weight: bold; margin-bottom: 10px; color: #000; }
-    .next-bus-area { display: flex; flex-direction: column; gap: 8px; }
+    .info { padding:16px; background:#fff; border-bottom: 2px solid #ddd; }
+    .current-time { font-size: 14px; font-weight: bold; margin-bottom: 10px; color: #000; }
     
-    .bus-info-card { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-radius: 8px; background: #f9f9f9; border-left: 5px solid #ccc; }
-    .bus-info-card.route-99 { border-left-color: #d32f2f; }
-    .bus-info-card.route-801 { border-left-color: #388e3c; }
-    .bus-info-card.route-21 { border-left-color: #1976d2; }
-    .bus-info-card.route-58 { border-left-color: #8e24aa; } /* 58번: 보라색 테마 */
-    
-    .bus-name { font-weight: bold; font-size: 16px; }
-    .bus-name.route-99 { color: #d32f2f; }
-    .bus-name.route-801 { color: #388e3c; }
-    .bus-name.route-21 { color: #1976d2; }
-    .bus-name.route-58 { color: #8e24aa; }
-    
-    .bus-time-details { text-align: right; }
-    .departure-time { font-size: 16px; font-weight: bold; color: #222; }
-    .remaining-min { font-size: 13px; color: #ff5722; font-weight: bold; margin-left: 5px; }
+    /* 범례 스타일 추가 */
+    .legend { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; padding: 8px; background: #fdfdfd; border: 1px solid #eee; border-radius: 6px; }
+    .legend-item { display: flex; align-items: center; gap: 4px; font-size: 11px; color: #666; }
+    .box { width: 12px; height: 12px; border: 1px solid #ccc; border-radius: 2px; }
 
-    .table-container { padding:8px; overflow-x:auto; background: #fff; width: 100%; }
-    table { width:100%; border-collapse:collapse; table-layout: auto; }
-    th, td { border:1px solid #ccc; padding:8px 1px; text-align:center; font-size: 13px; white-space: nowrap; }
-    th { background:#eee; font-weight: bold; }
-    
-    .cell-prev { background:#c8e6c9 !important; border: 2px solid #388e3c !important; }
-    .cell-next { background:#fff59d !important; font-weight: bold; border: 2px solid #fbc02d !important; }
+    .next-bus-area { display: flex; flex-direction: column; gap: 8px; }
+    
+    .bus-info-card { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-radius: 8px; background: #f9f9f9; border-left: 5px solid #ccc; }
+    .bus-info-card.route-99 { border-left-color: #d32f2f; }
+    .bus-info-card.route-801 { border-left-color: #388e3c; }
+    .bus-info-card.route-21 { border-left-color: #1976d2; }
+    .bus-info-card.route-58 { border-left-color: #8e24aa; }
+    
+    .bus-name { font-weight: bold; font-size: 16px; }
+    .bus-name.route-99 { color: #d32f2f; }
+    .bus-name.route-801 { color: #388e3c; }
+    .bus-name.route-21 { color: #1976d2; }
+    .bus-name.route-58 { color: #8e24aa; }
+    
+    .bus-time-details { text-align: right; }
+    .departure-time { font-size: 16px; font-weight: bold; color: #222; }
+    .remaining-min { font-size: 13px; color: #ff5722; font-weight: bold; margin-left: 5px; }
 
-    @media (max-width: 480px) {
-      th, td { font-size: 11.5px; padding: 7px 0px; }
-      .bus-name { font-size: 14px; }
-      .departure-time { font-size: 14px; }
-    }
-  </style>
+    .table-container { padding:8px; overflow-x:auto; background: #fff; width: 100%; }
+    table { width:100%; border-collapse:collapse; table-layout: auto; }
+    th, td { border:1px solid #ccc; padding:8px 1px; text-align:center; font-size: 13px; white-space: nowrap; }
+    th { background:#eee; font-weight: bold; }
+    
+    /* x < n 영역 (이미 지나간 버스 - 탈락자) */
+    .cell-out { background:#eeeeee !important; color:#999; }
+    /* x >= n 영역 (탈 수 있는 버스 - 생존자) */
+    .cell-survivor { background:#e3f2fd !important; }
 
-  <script src="data_99_801.js"></script>
-  <script src="data_2_1.js"></script>
-  <script src="data_58.js"></script>
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4147840233181777"
-     crossorigin="anonymous"></script>
-  
+    /* 기존 강조 스타일 유지 */
+    .cell-prev { background:#c8e6c9 !important; border: 2px solid #388e3c !important; color:#000; }
+    .cell-next { background:#fff59d !important; font-weight: bold; border: 2px solid #fbc02d !important; color:#000; }
+
+    .footer { padding: 20px; text-align: center; font-size: 12px; color: #888; background: #fff; }
+
+    @media (max-width: 480px) {
+      th, td { font-size: 11.5px; padding: 7px 0px; }
+      .bus-name { font-size: 14px; }
+      .departure-time { font-size: 14px; }
+    }
+  </style>
+
+  <script src="data_99_801.js"></script>
+  <script src="data_2_1.js"></script>
+  <script src="data_58.js"></script>
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4147840233181777" crossorigin="anonymous"></script>
 </head>
 <body>
 
-  <div class="selectors">
-    <label>노선 선택:
-      <select id="routeSelect">
-        <option value="99번" selected>99번</option>
-        <option value="801번">801번</option>
-        <option value="2-1번">2-1번</option>
-        <option value="58번">58번</option>
-      </select>
-    </label>
-    <label>출발 방향:
-      <select id="directionSelect"></select>
-    </label>
-  </div>
+  <div class="selectors">
+    <label>노선 선택:
+      <select id="routeSelect">
+        <option value="99번" selected>99번</option>
+        <option value="801번">801번</option>
+        <option value="2-1번">2-1번</option>
+        <option value="58번">58번</option>
+      </select>
+    </label>
+    <label>출발 방향:
+      <select id="directionSelect"></select>
+    </label>
+  </div>
 
-  <div class="info" id="infoBox">
-    <div class="current-time" id="currentTimeDisplay">데이터를 변환 중입니다...</div>
-    <div class="next-bus-area" id="nextBusArea"></div>
-  </div>
+  <div class="info" id="infoBox">
+    <div class="current-time" id="currentTimeDisplay">데이터를 변환 중입니다...</div>
+    
+    <div class="legend">
+      <div class="legend-item"><div class="box cell-out"></div> 탈락자(x &lt; n)</div>
+      <div class="legend-item"><div class="box cell-survivor"></div> 생존자(x &ge; n)</div>
+      <div class="legend-item"><div class="box cell-prev"></div> 직전차량</div>
+      <div class="legend-item"><div class="box cell-next"></div> 다음차량</div>
+    </div>
 
-  <div class="table-container" id="tableContainer"></div>
+    <div class="next-bus-area" id="nextBusArea"></div>
+  </div>
+
+  <div class="table-container" id="tableContainer"></div>
+  
+  <div class="footer">
+    세팅 시작일: 2025.01.06 (최종 업데이트 반영 중)
+  </div>
 
 <script>
 let timetable = { weekday: {}, saturday: {}, holiday: {} };
-
-// 사용자의 직전 선택을 기억하기 위한 상태 변수
 let prevSelectedRoute = "";
 let prevSelectedDir = "";
 
 const directionOptions = {
-  "99번": ["성복역", "상현역"],
-  "801번": ["상현역", "성복역"],
-  "2-1번": ["구성역", "죽전역"],
-  "58번": ["성복역", "구성역"] // 58번 추가
+  "99번": ["성복역", "상현역"],
+  "801번": ["상현역", "성복역"],
+  "2-1번": ["구성역", "죽전역"],
+  "58번": ["성복역", "구성역"]
 };
 
 function parseFlatData(flatArray) {
-  const dayMap = { "평일": "weekday", "토요일": "saturday", "공휴일": "holiday" };
-  
-  const dirOffsetMap = {
-    "구성": 0, "구성역": 0, "상현": 0, "상현역": 0,
-    "죽전": 1, "죽전역": 1, "성복": 1, "성복역": 1
-  };
+  const dayMap = { "평일": "weekday", "토요일": "saturday", "공휴일": "holiday" };
+  const dirOffsetMap = {
+    "구성": 0, "구성역": 0, "상현": 0, "상현역": 0,
+    "죽전": 1, "죽전역": 1, "성복": 1, "성복역": 1
+  };
 
-  flatArray.forEach(item => {
-    const dayKey = dayMap[item.DayKind];
-    if (!dayKey) return;
-    
-    let routeName = item.버스 !== undefined && item.버스 !== null ? String(item.버스) : "";
-    if (routeName !== "" && !routeName.endsWith("번")) {
-      routeName += "번";
-    }
+  flatArray.forEach(item => {
+    const dayKey = dayMap[item.DayKind];
+    if (!dayKey) return;
+    let routeName = item.버스 !== undefined && item.버스 !== null ? String(item.버스) : "";
+    if (routeName !== "" && !routeName.endsWith("번")) routeName += "번";
+    const startNode = item.StartFrom;
+    const round = parseInt(item.회차);
+    const carNum = parseInt(item.호수);
+    const time = item.시간;
+    if (!timetable[dayKey][routeName]) timetable[dayKey][routeName] = [];
+    let row = timetable[dayKey][routeName].find(r => r[0] === round);
+    if (!row) {
+      row = [round];
+      timetable[dayKey][routeName].push(row);
+    }
+    const dirOffset = dirOffsetMap[startNode];
+    if (dirOffset !== undefined) {
+      const colIdx = (carNum - 1) * 2 + 1 + dirOffset;
+      row[colIdx] = time;
+    }
+  });
 
-    const startNode = item.StartFrom;
-    const round = parseInt(item.회차);
-    const carNum = parseInt(item.호수);
-    const time = item.시간;
-
-    if (!timetable[dayKey][routeName]) timetable[dayKey][routeName] = [];
-
-    let row = timetable[dayKey][routeName].find(r => r[0] === round);
-    if (!row) {
-      row = [round];
-      timetable[dayKey][routeName].push(row);
-    }
-
-    const dirOffset = dirOffsetMap[startNode];
-    if (dirOffset !== undefined) {
-      const colIdx = (carNum - 1) * 2 + 1 + dirOffset;
-      row[colIdx] = time;
-    }
-  });
-
-  ['weekday', 'saturday', 'holiday'].forEach(dayKey => {
-    Object.keys(timetable[dayKey]).forEach(route => {
-      let data = timetable[dayKey][route];
-      data.sort((a, b) => a[0] - b[0]);
-      
-      let maxCols = 0;
-      data.forEach(r => { if(r.length > maxCols) maxCols = r.length; });
-      data.forEach(r => {
-        for(let i=1; i<maxCols; i++) {
-          if(r[i] === undefined) r[i] = "";
-        }
-      });
-    });
-  });
+  ['weekday', 'saturday', 'holiday'].forEach(dayKey => {
+    Object.keys(timetable[dayKey]).forEach(route => {
+      let data = timetable[dayKey][route];
+      data.sort((a, b) => a[0] - b[0]);
+      let maxCols = 0;
+      data.forEach(r => { if(r.length > maxCols) maxCols = r.length; });
+      data.forEach(r => {
+        for(let i=1; i<maxCols; i++) { if(r[i] === undefined) r[i] = ""; }
+      });
+    });
+  });
 }
 
 function loadTimetableData() {
-  try {
-    if (typeof rawData2_1 !== 'undefined') {
-      parseFlatData(rawData2_1);
-    }
-    if (typeof rawData99_801 !== 'undefined') {
-      parseFlatData(rawData99_801);
-    }
-    // 58번 데이터 파싱 호출
-    if (typeof rawData58 !== 'undefined') {
-      parseFlatData(rawData58);
-    }
+  try {
+    if (typeof rawData2_1 !== 'undefined') parseFlatData(rawData2_1);
+    if (typeof rawData99_801 !== 'undefined') parseFlatData(rawData99_801);
+    if (typeof rawData58 !== 'undefined') parseFlatData(rawData58);
 
-    updateDirectionOptions();
-    
-    const routeSelect = document.getElementById('routeSelect');
-    const directionSelect = document.getElementById('directionSelect');
-    
-    // 초기 로딩 시 상태 저장
-    prevSelectedRoute = routeSelect.value;
-    prevSelectedDir = directionSelect.value;
-    
-    renderAll();
+    updateDirectionOptions();
+    const routeSelect = document.getElementById('routeSelect');
+    const directionSelect = document.getElementById('directionSelect');
+    prevSelectedRoute = routeSelect.value;
+    prevSelectedDir = directionSelect.value;
+    
+    renderAll();
 
-    // 노선 선택 변경 시 처리 로직
-    routeSelect.addEventListener('change', () => { 
-      const tempRoute = prevSelectedRoute;
-      const tempDir = prevSelectedDir;
-      
-      updateDirectionOptions(); 
-      
-      const newRoute = routeSelect.value;
-      const newDir = directionSelect.value;
-      
-      // 801번 & 성복역 조합 시도 시 롤백 (기존 룰 유지)
-      if (newRoute === '801번' && newDir === '성복역') {
-        alert(`선택하신 ${newRoute} 버스는 ${newDir}에서 출발하지 않습니다.`);
-        routeSelect.value = tempRoute; // 이전 노선으로 되돌리기
-        updateDirectionOptions();      // 방향 옵션도 이전 노선에 맞게 다시 복구
-        directionSelect.value = tempDir; // 이전 방향으로 되돌리기
-        return; // 화면을 다시 그리지 않고 종료
-      }
-      
-      // 정상적인 변경일 경우 상태 업데이트 및 렌더링
-      prevSelectedRoute = routeSelect.value;
-      prevSelectedDir = directionSelect.value;
-      renderAll(); 
-    });
+    routeSelect.addEventListener('change', () => { 
+      const tempRoute = prevSelectedRoute;
+      const tempDir = prevSelectedDir;
+      updateDirectionOptions(); 
+      const newRoute = routeSelect.value;
+      const newDir = directionSelect.value;
+      if (newRoute === '801번' && newDir === '성복역') {
+        alert(`선택하신 ${newRoute} 버스는 ${newDir}에서 출발하지 않습니다.`);
+        routeSelect.value = tempRoute;
+        updateDirectionOptions();
+        directionSelect.value = tempDir;
+        return;
+      }
+      prevSelectedRoute = routeSelect.value;
+      prevSelectedDir = directionSelect.value;
+      renderAll(); 
+    });
 
-    // 출발 방향 선택 변경 시 처리 로직
-    directionSelect.addEventListener('change', () => {
-      const newRoute = routeSelect.value;
-      const newDir = directionSelect.value;
-      
-      // 801번 & 성복역 조합 시도 시 롤백 (기존 룰 유지)
-      if (newRoute === '801번' && newDir === '성복역') {
-        alert(`선택하신 ${newRoute} 버스는 ${newDir}에서 출발하지 않습니다.`);
-        directionSelect.value = prevSelectedDir; // 이전 방향으로 되돌리기
-        return; // 화면을 다시 그리지 않고 종료
-      }
-      
-      // 정상적인 변경일 경우 상태 업데이트 및 렌더링
-      prevSelectedRoute = routeSelect.value;
-      prevSelectedDir = directionSelect.value;
-      renderAll();
-    });
+    directionSelect.addEventListener('change', () => {
+      const newRoute = routeSelect.value;
+      const newDir = directionSelect.value;
+      if (newRoute === '801번' && newDir === '성복역') {
+        alert(`선택하신 ${newRoute} 버스는 ${newDir}에서 출발하지 않습니다.`);
+        directionSelect.value = prevSelectedDir;
+        return;
+      }
+      prevSelectedRoute = routeSelect.value;
+      prevSelectedDir = directionSelect.value;
+      renderAll();
+    });
 
-    setInterval(renderAll, 30000);
-
-  } catch (error) {
-    console.error("데이터 초기화 오류", error);
-    document.getElementById('currentTimeDisplay').innerText = "데이터 오류 발생";
-  }
+    setInterval(renderAll, 30000);
+  } catch (error) {
+    document.getElementById('currentTimeDisplay').innerText = "데이터 오류 발생";
+  }
 }
 
-function getDayType(){ 
-  const dow = new Date().getDay(); 
-  return dow === 0 ? 'holiday' : (dow === 6 ? 'saturday' : 'weekday'); 
+function getDayType(){ 
+  const dow = new Date().getDay(); 
+  return dow === 0 ? 'holiday' : (dow === 6 ? 'saturday' : 'weekday'); 
 }
 
 function updateDirectionOptions() {
-  const route = document.getElementById('routeSelect').value;
-  const dirSelect = document.getElementById('directionSelect');
-  dirSelect.innerHTML = '';
-  (directionOptions[route]||[]).forEach((d, i) => {
-    const opt = document.createElement('option');
-    opt.value = d; opt.textContent = d; if(i === 0) opt.selected = true;
-    dirSelect.appendChild(opt);
-  });
+  const route = document.getElementById('routeSelect').value;
+  const dirSelect = document.getElementById('directionSelect');
+  dirSelect.innerHTML = '';
+  (directionOptions[route]||[]).forEach((d, i) => {
+    const opt = document.createElement('option');
+    opt.value = d; opt.textContent = d; if(i === 0) opt.selected = true;
+    dirSelect.appendChild(opt);
+  });
 }
 
 function timeToMins(timeStr) {
-  if (!timeStr || timeStr === "충전" || timeStr === "") return -1;
-  const parts = timeStr.split(':');
-  if(parts.length !== 2) return -1;
-  const h = Number(parts[0]), m = Number(parts[1]);
-  if(isNaN(h) || isNaN(m)) return -1;
-  let total = h * 60 + m;
-  if (h < 4) total += 1440;
-  return total;
+  if (!timeStr || timeStr === "충전" || timeStr === "") return -1;
+  const parts = timeStr.split(':');
+  if(parts.length !== 2) return -1;
+  const h = Number(parts[0]), m = Number(parts[1]);
+  let total = h * 60 + m;
+  if (h < 4) total += 1440;
+  return total;
 }
 
 function getDirectionStartColumn(direction) {
-  if (direction.includes('상현') || direction.includes('구성')) return 1;
-  return 2;
+  if (direction.includes('상현') || direction.includes('구성')) return 1;
+  return 2;
 }
 
 function findNextBus(route, direction) {
-  const now = new Date();
-  const dayKey = getDayType();
-  const data = timetable[dayKey][route];
-  if(!data || data.length === 0) return null;
-
-  let curMins = now.getHours() * 60 + now.getMinutes();
-  if (now.getHours() < 4) curMins += 1440;
-
-  const colsPerRow = data[0].length;
-  let dirCols = [];
-  const start = getDirectionStartColumn(direction);
-  for(let i=start; i<colsPerRow; i+=2) dirCols.push(i);
-
-  let allTimes = [];
-  data.forEach(row => {
-    dirCols.forEach(c => {
-      const t = row[c];
-      const mins = timeToMins(t);
-      if(mins !== -1) allTimes.push({ str: t, mins: mins });
-    });
-  });
-  
-  if (allTimes.length === 0) return null;
-  allTimes.sort((a, b) => a.mins - b.mins);
-  
-  const next = allTimes.find(t => t.mins > curMins);
-  return next || { str: allTimes[0].str, mins: allTimes[0].mins + 1440, isTomorrow: true };
+  const now = new Date();
+  const dayKey = getDayType();
+  const data = timetable[dayKey][route];
+  if(!data || data.length === 0) return null;
+  let curMins = now.getHours() * 60 + now.getMinutes();
+  if (now.getHours() < 4) curMins += 1440;
+  const colsPerRow = data[0].length;
+  let dirCols = [];
+  const start = getDirectionStartColumn(direction);
+  for(let i=start; i<colsPerRow; i+=2) dirCols.push(i);
+  let allTimes = [];
+  data.forEach(row => {
+    dirCols.forEach(c => {
+      const t = row[c];
+      const mins = timeToMins(t);
+      if(mins !== -1) allTimes.push({ str: t, mins: mins });
+    });
+  });
+  if (allTimes.length === 0) return null;
+  allTimes.sort((a, b) => a.mins - b.mins);
+  const next = allTimes.find(t => t.mins > curMins);
+  return next || { str: allTimes[0].str, mins: allTimes[0].mins + 1440, isTomorrow: true };
 }
 
 function renderAll() {
-  const now = new Date();
-  const dayKey = getDayType();
-  const activeRoute = document.getElementById('routeSelect').value;
-  const activeDir = document.getElementById('directionSelect').value;
+  const now = new Date();
+  const dayKey = getDayType();
+  const activeRoute = document.getElementById('routeSelect').value;
+  const activeDir = document.getElementById('directionSelect').value;
 
-  const dateStr = now.toLocaleDateString('ko-KR', { month:'long', day:'numeric' });
-  const timeStr = now.toLocaleTimeString('ko-KR', { hour:'2-digit', minute:'2-digit', hour12: false });
-  
-  let dayText = '평일';
-  let dayColor = '#000';
-  
-  if (dayKey === 'holiday') {
-    dayText = now.getDay() === 0 ? '일요일' : '공휴일';
-    dayColor = '#d32f2f'; 
-  } else if (dayKey === 'saturday') {
-    dayText = '토요일';
-    dayColor = '#1976d2'; 
-  }
+  const dateStr = now.toLocaleDateString('ko-KR', { month:'long', day:'numeric' });
+  const timeStr = now.toLocaleTimeString('ko-KR', { hour:'2-digit', minute:'2-digit', hour12: false });
+  let dayText = '평일', dayColor = '#000';
+  if (dayKey === 'holiday') { dayText = now.getDay() === 0 ? '일요일' : '공휴일'; dayColor = '#d32f2f'; }
+  else if (dayKey === 'saturday') { dayText = '토요일'; dayColor = '#1976d2'; }
 
-  document.getElementById('currentTimeDisplay').innerHTML = `오늘은 <span style="color:#000;">${dateStr}</span> (<span style="color:${dayColor};">${dayText}</span>), 현재 <span style="color:#000;">${timeStr}</span>`;
+  document.getElementById('currentTimeDisplay').innerHTML = `오늘은 <span style="color:#000;">${dateStr}</span> (<span style="color:${dayColor};">${dayText}</span>), 현재 <span style="color:#000;">${timeStr}</span>`;
 
-  const nextBusArea = document.getElementById('nextBusArea');
-  nextBusArea.innerHTML = '';
+  const nextBusArea = document.getElementById('nextBusArea');
+  nextBusArea.innerHTML = '';
+  const allRoutes = [
+    { name: '99번', class: 'route-99', dir: (activeRoute === '99번' ? activeDir : directionOptions['99번'][0]) },
+    { name: '801번', class: 'route-801', dir: (activeRoute === '801번' ? activeDir : directionOptions['801번'][0]) },
+    { name: '2-1번', class: 'route-21', dir: (activeRoute === '2-1번' ? activeDir : directionOptions['2-1번'][0]) },
+    { name: '58번', class: 'route-58', dir: (activeRoute === '58번' ? activeDir : directionOptions['58번'][0]) }
+  ];
 
-  const allRoutes = [
-    { name: '99번', class: 'route-99', dir: (activeRoute === '99번' ? activeDir : directionOptions['99번'][0]) },
-    { name: '801번', class: 'route-801', dir: (activeRoute === '801번' ? activeDir : directionOptions['801번'][0]) },
-    { name: '2-1번', class: 'route-21', dir: (activeRoute === '2-1번' ? activeDir : directionOptions['2-1번'][0]) },
-    { name: '58번', class: 'route-58', dir: (activeRoute === '58번' ? activeDir : directionOptions['58번'][0]) }
-  ];
+  const routesToShow = allRoutes.filter(r => {
+    if (activeDir.includes('상현')) return r.name === '99번' || r.name === '801번';
+    if (activeDir.includes('성복')) return r.name === '99번' || r.name === '58번'; 
+    if (activeDir.includes('죽전')) return r.name === '2-1번';
+    if (activeDir.includes('구성')) return r.name === '2-1번' || r.name === '58번';
+    return true; 
+  });
 
-  // 58번이 성복, 구성 선택시에만 나타나도록 필터 조건 추가
-  const routesToShow = allRoutes.filter(r => {
-    if (activeDir.includes('상현')) {
-      return r.name === '99번' || r.name === '801번';
-    } else if (activeDir.includes('성복')) {
-      return r.name === '99번' || r.name === '58번'; 
-    } else if (activeDir.includes('죽전')) {
-      return r.name === '2-1번';
-    } else if (activeDir.includes('구성')) {
-      return r.name === '2-1번' || r.name === '58번';
-    }
-    return true; 
-  });
+  routesToShow.forEach(r => {
+    const next = findNextBus(r.name, r.dir);
+    if (!next) return;
+    const card = document.createElement('div');
+    card.className = `bus-info-card ${r.class}`;
+    let curMins = now.getHours() * 60 + now.getMinutes();
+    if (now.getHours() < 4) curMins += 1440;
+    const diff = next.mins - curMins;
+    const remainText = next.isTomorrow ? "(내일 첫차)" : (diff > 0 ? `${diff}분 남음` : "잠시 후");
+    card.innerHTML = `<div class="bus-name ${r.class}">${r.name} <span style="font-size:11px; color:#666; font-weight:normal;">(${r.dir} 출발)</span></div><div class="bus-time-details"><span class="departure-time">${next.str}</span><span class="remaining-min">${remainText}</span></div>`;
+    nextBusArea.appendChild(card);
+  });
 
-  routesToShow.forEach(r => {
-    const next = findNextBus(r.name, r.dir);
-    if (!next) return;
-    const card = document.createElement('div');
-    card.className = `bus-info-card ${r.class}`;
-    
-    let curMins = now.getHours() * 60 + now.getMinutes();
-    if (now.getHours() < 4) curMins += 1440;
-    const diff = next.mins - curMins;
-    const remainText = next.isTomorrow ? "(내일 첫차)" : (diff > 0 ? `${diff}분 남음` : "잠시 후");
-    
-    card.innerHTML = `
-      <div class="bus-name ${r.class}">${r.name} <span style="font-size:11px; color:#666; font-weight:normal;">(${r.dir} 출발)</span></div>
-      <div class="bus-time-details">
-        <span class="departure-time">${next.str}</span>
-        <span class="remaining-min">${remainText}</span>
-      </div>
-    `;
-    nextBusArea.appendChild(card);
-  });
+  const container = document.getElementById('tableContainer');
+  container.innerHTML = '';
+  const data = timetable[dayKey][activeRoute];
+  if(!data || data.length === 0) {
+    container.innerHTML = `<div style="padding: 20px; text-align: center; color: #888;">해당 요일의 ${activeRoute} 시간표 데이터가 없습니다.</div>`;
+    return;
+  }
 
-  const container = document.getElementById('tableContainer');
-  container.innerHTML = '';
-  const data = timetable[dayKey][activeRoute];
-  if(!data || data.length === 0) {
-    container.innerHTML = `<div style="padding: 20px; text-align: center; color: #888;">해당 요일의 ${activeRoute} 시간표 데이터가 없습니다.</div>`;
-    return;
-  }
+  const colsPerRow = data[0].length;
+  let dirCols = [];
+  const start = getDirectionStartColumn(activeDir);
+  for(let i=start; i<colsPerRow; i+=2) dirCols.push(i);
 
-  const colsPerRow = data[0].length;
-  let dirCols = [];
-  const start = getDirectionStartColumn(activeDir);
-  for(let i=start; i<colsPerRow; i+=2) dirCols.push(i);
+  const table = document.createElement('table');
+  const thead = document.createElement('thead');
+  const trH = document.createElement('tr');
+  trH.appendChild(Object.assign(document.createElement('th'), { innerText: '회차' }));
+  dirCols.forEach((_, idx) => trH.appendChild(Object.assign(document.createElement('th'), { innerText: `${idx + 1}호차` })));
+  thead.appendChild(trH);
+  table.appendChild(thead);
 
-  const table = document.createElement('table');
-  const thead = document.createElement('thead');
-  const trH = document.createElement('tr');
-  trH.appendChild(Object.assign(document.createElement('th'), { innerText: '회차' }));
-  dirCols.forEach((_, idx) => trH.appendChild(Object.assign(document.createElement('th'), { innerText: `${idx + 1}호차` })));
-  thead.appendChild(trH);
-  table.appendChild(thead);
-
-  const tbody = document.createElement('tbody');
-  data.forEach(row => {
-    const tr = document.createElement('tr');
-    tr.appendChild(Object.assign(document.createElement('td'), { innerText: row[0], style: 'background:#f4f4f4; font-weight:bold;' }));
-    dirCols.forEach(c => {
-      const cell = document.createElement('td');
-      cell.innerText = row[c] || '';
-      tr.appendChild(cell);
-    });
-    tbody.appendChild(tr);
-  });
-  table.appendChild(tbody);
-  container.appendChild(table);
-
-  highlightTable(table);
+  const tbody = document.createElement('tbody');
+  data.forEach(row => {
+    const tr = document.createElement('tr');
+    tr.appendChild(Object.assign(document.createElement('td'), { innerText: row[0], style: 'background:#f4f4f4; font-weight:bold;' }));
+    dirCols.forEach(c => {
+      const cell = document.createElement('td');
+      cell.innerText = row[c] || '';
+      tr.appendChild(cell);
+    });
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  container.appendChild(table);
+  highlightTable(table);
 }
 
 function highlightTable(table) {
-  const now = new Date();
-  let curMins = now.getHours() * 60 + now.getMinutes();
-  if (now.getHours() < 4) curMins += 1440;
+  const now = new Date();
+  let curMins = now.getHours() * 60 + now.getMinutes();
+  if (now.getHours() < 4) curMins += 1440;
 
-  const rows = table.querySelectorAll('tbody tr');
-  let allPoints = [];
-  rows.forEach((tr) => {
-    const tds = tr.querySelectorAll('td');
-    tds.forEach((td, cIdx) => {
-      if(cIdx === 0) return;
-      const mins = timeToMins(td.innerText);
-      if(mins !== -1) allPoints.push({ td, mins });
-    });
-  });
+  const rows = table.querySelectorAll('tbody tr');
+  let allPoints = [];
+  rows.forEach((tr) => {
+    const tds = tr.querySelectorAll('td');
+    tds.forEach((td, cIdx) => {
+      if(cIdx === 0) return;
+      const mins = timeToMins(td.innerText);
+      if(mins !== -1) {
+        allPoints.push({ td, mins });
+        // 기본 생존자/탈락자 색상 적용 (n일차 로직)
+        if (mins < curMins) {
+          td.classList.add('cell-out');
+        } else {
+          td.classList.add('cell-survivor');
+        }
+      }
+    });
+  });
 
-  if(allPoints.length === 0) return;
-  allPoints.sort((a, b) => a.mins - b.mins);
+  if(allPoints.length === 0) return;
+  allPoints.sort((a, b) => a.mins - b.mins);
 
-  let prevPoint = null, nextPoint = null;
-  for (let i = 0; i < allPoints.length; i++) {
-    if (allPoints[i].mins > curMins) {
-      nextPoint = allPoints[i];
-      prevPoint = allPoints[i-1] || null;
-      break;
-    }
-  }
-  if (!nextPoint) { nextPoint = allPoints[0]; prevPoint = allPoints[allPoints.length - 1]; }
+  let prevPoint = null, nextPoint = null;
+  for (let i = 0; i < allPoints.length; i++) {
+    if (allPoints[i].mins > curMins) {
+      nextPoint = allPoints[i];
+      prevPoint = allPoints[i-1] || null;
+      break;
+    }
+  }
+  if (!nextPoint) { nextPoint = allPoints[0]; prevPoint = allPoints[allPoints.length - 1]; }
 
-  allPoints.forEach(p => p.td.classList.remove('cell-prev', 'cell-next'));
-  if (prevPoint) prevPoint.td.classList.add('cell-prev');
-  if (nextPoint) nextPoint.td.classList.add('cell-next');
+  // 기존 강조는 덮어씌움
+  if (prevPoint) {
+    prevPoint.td.classList.remove('cell-out', 'cell-survivor');
+    prevPoint.td.classList.add('cell-prev');
+  }
+  if (nextPoint) {
+    nextPoint.td.classList.remove('cell-out', 'cell-survivor');
+    nextPoint.td.classList.add('cell-next');
+  }
 }
 
 window.onload = loadTimetableData;
 
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(console.error);
-  });
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(console.error);
+  });
 }
 </script>
 </body>
