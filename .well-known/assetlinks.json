@@ -1,1 +1,14 @@
-
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.departtime.app",
+      "sha256_cert_fingerprints": [
+        "05:AC:5E:96:57:5D:6A:C0:81:9F:7F:D5:BF:7D:71:FF:7F:CE:D3:00:2A:CC:B3:40:79:A5:EB:06:82:3A:AF:77"
+      ]
+    }
+  }
+]
