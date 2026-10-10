@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
-  <title>버스 출발 시간표</title>
-  <meta name="description" content="99번, 801번, 2-1번, 58번 버스 출발 시간표를 모바일 홈 화면에 설치해 빠르게 확인하세요." />
+  <title>버스·GTX-A 출발 시간표</title>
+  <meta name="description" content="99번·801번·2-1번·58번 버스와 GTX-A(수서·구성) 출발 시간표를 확인하세요." />
   <meta name="theme-color" content="#ffffff" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -35,12 +35,17 @@
     .bus-info-card.route-801 { border-left-color: #388e3c; }
     .bus-info-card.route-21 { border-left-color: #1976d2; }
     .bus-info-card.route-58 { border-left-color: #8e24aa; } /* 58번: 보라색 테마 */
+    .bus-info-card.route-gtx { border-left-color: #c2185b; }
     
     .bus-name { font-weight: bold; font-size: 16px; }
     .bus-name.route-99 { color: #d32f2f; }
     .bus-name.route-801 { color: #388e3c; }
     .bus-name.route-21 { color: #1976d2; }
     .bus-name.route-58 { color: #8e24aa; }
+    .bus-name.route-gtx { color: #c2185b; }
+    .gtx-summary { padding: 8px 6px 12px; font-size: 13px; font-weight: bold; color: #555; }
+    .gtx-note { padding: 10px 6px; font-size: 11px; color: #777; line-height: 1.5; }
+    .gtx-car-label { font-size: 11px; font-weight: normal; color: #666; }
     
     .bus-time-details { text-align: right; }
     .departure-time { font-size: 16px; font-weight: bold; color: #222; }
@@ -64,6 +69,7 @@
   <script src="data_99_801.js"></script>
   <script src="data_2_1.js"></script>
   <script src="data_58.js"></script>
+  <script src="data_gtx_a.js"></script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4147840233181777"
      crossorigin="anonymous"></script>
   
@@ -77,9 +83,10 @@
         <option value="801번">801번</option>
         <option value="2-1번">2-1번</option>
         <option value="58번">58번</option>
+        <option value="GTX-A">GTX-A</option>
       </select>
     </label>
-    <label>출발 방향:
+    <label><span id="directionLabelText">출발 방향:</span>
       <select id="directionSelect"></select>
     </label>
   </div>
@@ -102,7 +109,8 @@ const directionOptions = {
   "99번": ["성복역", "상현역"],
   "801번": ["상현역", "성복역"],
   "2-1번": ["구성역", "죽전역"],
-  "58번": ["성복역", "구성역"] // 58번 추가
+  "58번": ["성복역", "구성역"], // 58번 추가
+  "GTX-A": ["수서", "구성"]
 };
 
 function parseFlatData(flatArray) {
@@ -242,6 +250,7 @@ function updateDirectionOptions() {
   const route = document.getElementById('routeSelect').value;
   const dirSelect = document.getElementById('directionSelect');
   dirSelect.innerHTML = '';
+  document.getElementById('directionLabelText').textContent = route === 'GTX-A' ? '출발역:' : '출발 방향:';
   (directionOptions[route]||[]).forEach((d, i) => {
     const opt = document.createElement('option');
     opt.value = d; opt.textContent = d; if(i === 0) opt.selected = true;
@@ -295,6 +304,93 @@ function findNextBus(route, direction) {
   return next || { str: allTimes[0].str, mins: allTimes[0].mins + 1440, isTomorrow: true };
 }
 
+
+function getGtxDepartures(station) {
+  const source = (typeof rawDataGtxA !== 'undefined') ? rawDataGtxA[station] : null;
+  if (!source || !Array.isArray(source.hours)) return [];
+  const departures = [];
+  source.hours.forEach(([hour, minutes]) => {
+    minutes.forEach((minute, idx) => departures.push({
+      hour, minute, sequence: idx + 1,
+      str: String(hour).padStart(2, '0') + ':' + String(minute).padStart(2, '0')
+    }));
+  });
+  return departures;
+}
+
+// 엑셀의 0시 시간대는 전날 운행표에서 이어지는 다음 날 자정 이후 열차이다.
+function findNextGtxTrain(station, now = new Date()) {
+  const departures = getGtxDepartures(station);
+  let next = null;
+  // 전날 막차(00시), 당일 열차, 내일 첫차까지 날짜를 정확히 비교한다.
+  for (let dayOffset = -1; dayOffset <= 1; dayOffset++) {
+    const day = new Date(now.getFullYear(), now.getMonth(), now.getDate() + dayOffset);
+    departures.forEach(({hour, minute, sequence, str}) => {
+      const at = new Date(day.getFullYear(), day.getMonth(),
+        day.getDate() + (hour === 0 ? 1 : 0), hour, minute);
+      if (at > now && (!next || at < next.at)) {
+        next = {str, sequence, at, isTomorrow: at.toDateString() !== now.toDateString()};
+      }
+    });
+  }
+  return next;
+}
+
+function renderGtxTable(container, station) {
+  const source = (typeof rawDataGtxA !== 'undefined') ? rawDataGtxA[station] : null;
+  if (!source || !Array.isArray(source.hours)) {
+    container.textContent = '해당 역의 GTX-A 시간표 데이터가 없습니다.';
+    return;
+  }
+
+  const heading = document.createElement('div');
+  heading.className = 'gtx-summary';
+  heading.textContent = 'GTX-A · ' + station + '역 출발 → ' + source.방면 + ' 방면';
+  container.appendChild(heading);
+
+  const maxPerHour = Math.max(...source.hours.map(([, minutes]) => minutes.length));
+  const table = document.createElement('table');
+  const thead = document.createElement('thead');
+  const headRow = document.createElement('tr');
+  const hourHeader = document.createElement('th');
+  hourHeader.textContent = '시간';
+  headRow.appendChild(hourHeader);
+  for (let idx = 0; idx < maxPerHour; idx++) {
+    const th = document.createElement('th');
+    th.textContent = (idx + 1) + '호차';
+    headRow.appendChild(th);
+  }
+  thead.appendChild(headRow);
+  table.appendChild(thead);
+
+  const tbody = document.createElement('tbody');
+  source.hours.forEach(([hour, minutes]) => {
+    const tr = document.createElement('tr');
+    const hourCell = document.createElement('td');
+    hourCell.textContent = String(hour).padStart(2, '0') + '시' + (hour === 0 ? ' (익일)' : '');
+    hourCell.style.background = '#f4f4f4';
+    hourCell.style.fontWeight = 'bold';
+    tr.appendChild(hourCell);
+    for (let idx = 0; idx < maxPerHour; idx++) {
+      const td = document.createElement('td');
+      if (minutes[idx] !== undefined) {
+        td.textContent = String(hour).padStart(2, '0') + ':' +
+          String(minutes[idx]).padStart(2, '0');
+      }
+      tr.appendChild(td);
+    }
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  container.appendChild(table);
+
+  const note = document.createElement('div');
+  note.className = 'gtx-note';
+  note.textContent = '호차는 실제 열차 편성번호가 아닌, 해당 시간대의 출발 순서입니다. 첨부 시간표에는 요일 구분이 없습니다.';
+  container.appendChild(note);
+  highlightTable(table);
+}
+
 function renderAll() {
   const now = new Date();
   const dayKey = getDayType();
@@ -324,11 +420,13 @@ function renderAll() {
     { name: '99번', class: 'route-99', dir: (activeRoute === '99번' ? activeDir : directionOptions['99번'][0]) },
     { name: '801번', class: 'route-801', dir: (activeRoute === '801번' ? activeDir : directionOptions['801번'][0]) },
     { name: '2-1번', class: 'route-21', dir: (activeRoute === '2-1번' ? activeDir : directionOptions['2-1번'][0]) },
-    { name: '58번', class: 'route-58', dir: (activeRoute === '58번' ? activeDir : directionOptions['58번'][0]) }
+    { name: '58번', class: 'route-58', dir: (activeRoute === '58번' ? activeDir : directionOptions['58번'][0]) },
+    { name: 'GTX-A', class: 'route-gtx', dir: (activeRoute === 'GTX-A' ? activeDir : directionOptions['GTX-A'][0]) }
   ];
 
   // 58번이 성복, 구성 선택시에만 나타나도록 필터 조건 추가
   const routesToShow = allRoutes.filter(r => {
+    if (activeRoute === 'GTX-A') return r.name === 'GTX-A';
     if (activeDir.includes('상현')) {
       return r.name === '99번' || r.name === '801번';
     } else if (activeDir.includes('성복')) {
@@ -342,20 +440,23 @@ function renderAll() {
   });
 
   routesToShow.forEach(r => {
-    const next = findNextBus(r.name, r.dir);
+    const next = r.name === 'GTX-A' ? findNextGtxTrain(r.dir, now) : findNextBus(r.name, r.dir);
     if (!next) return;
     const card = document.createElement('div');
     card.className = `bus-info-card ${r.class}`;
     
     let curMins = now.getHours() * 60 + now.getMinutes();
     if (now.getHours() < 4) curMins += 1440;
-    const diff = next.mins - curMins;
-    const remainText = next.isTomorrow ? "(내일 첫차)" : (diff > 0 ? `${diff}분 남음` : "잠시 후");
+    const diff = r.name === 'GTX-A' ? Math.ceil((next.at - now) / 60000) : next.mins - curMins;
+    const remainText = r.name === 'GTX-A'
+      ? ((next.isTomorrow ? '내일 출발 · ' : '') + diff + '분 남음')
+      : (next.isTomorrow ? '(내일 첫차)' : (diff > 0 ? diff + '분 남음' : '잠시 후'));
     
+    const carLabel = r.name === 'GTX-A' ? ' <small class="gtx-car-label">(' + next.sequence + '호차)</small>' : '';
     card.innerHTML = `
       <div class="bus-name ${r.class}">${r.name} <span style="font-size:11px; color:#666; font-weight:normal;">(${r.dir} 출발)</span></div>
       <div class="bus-time-details">
-        <span class="departure-time">${next.str}</span>
+        <span class="departure-time">${next.str}${carLabel}</span>
         <span class="remaining-min">${remainText}</span>
       </div>
     `;
@@ -364,6 +465,10 @@ function renderAll() {
 
   const container = document.getElementById('tableContainer');
   container.innerHTML = '';
+  if (activeRoute === 'GTX-A') {
+    renderGtxTable(container, activeDir);
+    return;
+  }
   const data = timetable[dayKey][activeRoute];
   if(!data || data.length === 0) {
     container.innerHTML = `<div style="padding: 20px; text-align: center; color: #888;">해당 요일의 ${activeRoute} 시간표 데이터가 없습니다.</div>`;

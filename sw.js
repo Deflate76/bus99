@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bus-departtime-v1';
+const CACHE_NAME = 'bus-departtime-v2';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -8,7 +8,11 @@ const APP_SHELL = [
   '/favicon-96x96.png',
   '/apple-touch-icon.png',
   '/web-app-manifest-192x192.png',
-  '/web-app-manifest-512x512.png'
+  '/web-app-manifest-512x512.png',
+  '/data_99_801.js',
+  '/data_2_1.js',
+  '/data_58.js',
+  '/data_gtx_a.js'
 ];
 
 self.addEventListener('install', event => {
