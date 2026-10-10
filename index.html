@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
   <title>버스·GTX-A 출발 시간표</title>
-  <meta name="description" content="99번·801번·2-1번·58번 버스와 GTX-A(수서·구성) 출발 시간표를 확인하세요." />
+  <meta name="description" content="99번·801번·2-1번·58번·5500-2번 버스와 GTX-A(수서·구성) 출발 시간표를 확인하세요." />
   <meta name="theme-color" content="#ffffff" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -36,6 +36,7 @@
     .bus-info-card.route-21 { border-left-color: #1976d2; }
     .bus-info-card.route-58 { border-left-color: #8e24aa; } /* 58번: 보라색 테마 */
     .bus-info-card.route-gtx { border-left-color: #c2185b; }
+    .bus-info-card.route-5500 { border-left-color: #00838f; }
     
     .bus-name { font-weight: bold; font-size: 16px; }
     .bus-name.route-99 { color: #d32f2f; }
@@ -43,6 +44,22 @@
     .bus-name.route-21 { color: #1976d2; }
     .bus-name.route-58 { color: #8e24aa; }
     .bus-name.route-gtx { color: #c2185b; }
+    .bus-name.route-5500 { color: #00838f; }
+    .bus5500-service-row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; background:#e8f3f5; padding:10px 16px; font-size:13px; }
+    .bus5500-service-row[hidden] { display:none !important; }
+    .bus5500-service-row label { display:flex; gap:12px; align-items:center; font-weight:bold; }
+    .bus5500-service-row select { margin:0; width:auto; min-width:155px; border:1px solid #b0cdd1; }
+    .bus5500-service-note { color:#536c70; font-size:12px; line-height:1.4; }
+    .bus5500-summary { padding:8px 6px 12px; font-size:13px; color:#444; font-weight:bold; }
+    .bus5500-table { table-layout:fixed; }
+    .bus5500-table td.double-deck { background:#ffcb4b; font-weight:bold; color:#242424; }
+    .bus5500-table td.reserved-departure { background:#b9e595; font-weight:bold; color:#273927; }
+    .bus5500-reserved-label { font-size:10px; margin-left:2px; }
+    .bus5500-legend, .bus5500-notes { margin:10px 4px; color:#555; font-size:12px; line-height:1.65; }
+    .bus5500-legend-yellow { background:#ffcb4b; padding:2px 5px; border-radius:3px; }
+    .bus5500-legend-green { background:#b9e595; padding:2px 5px; border-radius:3px; }
+    .bus5500-next-detail { font-size:11px; font-weight:normal; color:#666; }
+
     .gtx-summary { padding: 8px 6px 12px; font-size: 13px; font-weight: bold; color: #555; }
     .gtx-note { padding: 10px 6px; font-size: 11px; color: #777; line-height: 1.5; }
     .gtx-car-label { font-size: 11px; font-weight: normal; color: #666; }
@@ -70,6 +87,7 @@
   <script src="data_2_1.js"></script>
   <script src="data_58.js"></script>
   <script src="data_gtx_a.js"></script>
+  <script src="data_5500_2.js"></script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4147840233181777"
      crossorigin="anonymous"></script>
   
@@ -84,11 +102,23 @@
         <option value="2-1번">2-1번</option>
         <option value="58번">58번</option>
         <option value="GTX-A">GTX-A</option>
+        <option value="5500-2번">5500-2번</option>
       </select>
     </label>
     <label><span id="directionLabelText">출발 방향:</span>
       <select id="directionSelect"></select>
     </label>
+  </div>
+
+  <div id="bus5500ServiceRow" class="bus5500-service-row" hidden>
+    <label for="bus5500DaySelect">운행일:
+      <select id="bus5500DaySelect" aria-label="5500-2번 운행일 시간표 선택">
+        <option value="auto" selected>자동 (토·일 기준)</option>
+        <option value="weekday">평일</option>
+        <option value="weekend">주말·공휴일</option>
+      </select>
+    </label>
+    <span class="bus5500-service-note">평일에 공휴일인 경우 주말·공휴일을 선택하세요.</span>
   </div>
 
   <div class="info" id="infoBox">
@@ -110,7 +140,8 @@ const directionOptions = {
   "801번": ["상현역", "성복역"],
   "2-1번": ["구성역", "죽전역"],
   "58번": ["성복역", "구성역"], // 58번 추가
-  "GTX-A": ["수서", "구성"]
+  "GTX-A": ["수서", "구성"],
+  "5500-2번": ["광교"]
 };
 
 function parseFlatData(flatArray) {
@@ -233,6 +264,7 @@ function loadTimetableData() {
       renderAll();
     });
 
+    document.getElementById('bus5500DaySelect').addEventListener('change', renderAll);
     setInterval(renderAll, 30000);
 
   } catch (error) {
@@ -250,7 +282,8 @@ function updateDirectionOptions() {
   const route = document.getElementById('routeSelect').value;
   const dirSelect = document.getElementById('directionSelect');
   dirSelect.innerHTML = '';
-  document.getElementById('directionLabelText').textContent = route === 'GTX-A' ? '출발역:' : '출발 방향:';
+  document.getElementById('directionLabelText').textContent = route === 'GTX-A' ? '출발역:' : (route === '5500-2번' ? '출발지:' : '출발 방향:');
+  document.getElementById('bus5500ServiceRow').hidden = route !== '5500-2번';
   (directionOptions[route]||[]).forEach((d, i) => {
     const opt = document.createElement('option');
     opt.value = d; opt.textContent = d; if(i === 0) opt.selected = true;
@@ -391,6 +424,115 @@ function renderGtxTable(container, station) {
   highlightTable(table);
 }
 
+
+function get5500ScheduleKey(forDate) {
+  const mode = document.getElementById('bus5500DaySelect').value;
+  if (mode === 'weekday' || mode === 'weekend') return mode;
+  // 자동 모드는 토·일을 주말로 처리한다. 평일 공휴일은 직접 선택할 수 있다.
+  return (forDate.getDay() === 0 || forDate.getDay() === 6) ? 'weekend' : 'weekday';
+}
+
+function get5500Rows(forDate = new Date()) {
+  const key = get5500ScheduleKey(forDate);
+  return (typeof rawData5500_2 !== 'undefined' && rawData5500_2[key]) || [];
+}
+
+function findNext5500Bus(now = new Date()) {
+  if (typeof rawData5500_2 === 'undefined') return null;
+  let best = null;
+  // 막차 이후에는 다음 날짜의 운행일 구분을 다시 판별해 첫차를 찾는다.
+  for (let dayOffset = 0; dayOffset <= 1; dayOffset++) {
+    const day = new Date(now.getFullYear(), now.getMonth(), now.getDate() + dayOffset);
+    get5500Rows(day).forEach(row => row.departures.forEach((time, index) => {
+      if (!time) return;
+      const [hour, minute] = time.split(':').map(Number);
+      const at = new Date(day.getFullYear(), day.getMonth(), day.getDate(), hour, minute);
+      if (at > now && (!best || at < best.at)) {
+        best = {
+          str: time, at, vehicle: row.vehicle, round: index + 1,
+          doubleDeck: row.doubleDeck.includes(index + 1),
+          reserved: (row.reserved || []).includes(index + 1),
+          isTomorrow: dayOffset === 1
+        };
+      }
+    }));
+  }
+  return best;
+}
+
+function render5500Table(container, now = new Date()) {
+  if (typeof rawData5500_2 === 'undefined') {
+    container.textContent = '5500-2번 시간표 데이터가 없습니다.';
+    return;
+  }
+  const scheduleKey = get5500ScheduleKey(now);
+  const rows = get5500Rows(now);
+  const total = rows.reduce((sum, row) => sum + row.departures.filter(Boolean).length, 0);
+  const label = scheduleKey === 'weekday' ? '평일' : '주말·공휴일';
+
+  const heading = document.createElement('div');
+  heading.className = 'bus5500-summary';
+  heading.textContent = '5500-2번 · 광교 출발 · ' + label + ' (' + total + '회)';
+  container.appendChild(heading);
+
+  const table = document.createElement('table');
+  table.className = 'bus5500-table';
+  const head = document.createElement('tr');
+  ['차량', '1회', '2회', '3회', '4회', '5회'].forEach(text => {
+    const th = document.createElement('th');
+    th.textContent = text;
+    head.appendChild(th);
+  });
+  const thead = document.createElement('thead');
+  thead.appendChild(head);
+  table.appendChild(thead);
+
+  const tbody = document.createElement('tbody');
+  rows.forEach(row => {
+    const tr = document.createElement('tr');
+    const vehicleCell = document.createElement('td');
+    vehicleCell.textContent = row.vehicle;
+    vehicleCell.style.background = '#f4f4f4';
+    vehicleCell.style.fontWeight = 'bold';
+    tr.appendChild(vehicleCell);
+    row.departures.forEach((time, index) => {
+      const td = document.createElement('td');
+      if (time) {
+        td.dataset.departure = time;
+        td.textContent = time;
+        if (row.doubleDeck.includes(index + 1)) td.classList.add('double-deck');
+        if ((row.reserved || []).includes(index + 1)) {
+          td.classList.add('reserved-departure');
+          const small = document.createElement('span');
+          small.className = 'bus5500-reserved-label';
+          small.textContent = '(예약)';
+          td.appendChild(small);
+        }
+      }
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  container.appendChild(table);
+
+  const legend = document.createElement('div');
+  legend.className = 'bus5500-legend';
+  legend.innerHTML = '<span class="bus5500-legend-yellow">노란색: 2층 버스</span> &nbsp; ' +
+    '<span class="bus5500-legend-green">초록색: 예약 운행</span> &nbsp; 빈칸: 미운행';
+  container.appendChild(legend);
+
+  if (scheduleKey === 'weekday' && rawData5500_2.charterWeekday) {
+    const note = document.createElement('div');
+    note.className = 'bus5500-notes';
+    const charter = rawData5500_2.charterWeekday;
+    note.textContent = '별도 전세버스(평일, 위 70회 운행에서 제외) — 출근: ' +
+      charter.commute.join(', ') + ' / 퇴근: ' + charter.return.join(', ');
+    container.appendChild(note);
+  }
+  highlightTable(table);
+}
+
 function renderAll() {
   const now = new Date();
   const dayKey = getDayType();
@@ -421,12 +563,14 @@ function renderAll() {
     { name: '801번', class: 'route-801', dir: (activeRoute === '801번' ? activeDir : directionOptions['801번'][0]) },
     { name: '2-1번', class: 'route-21', dir: (activeRoute === '2-1번' ? activeDir : directionOptions['2-1번'][0]) },
     { name: '58번', class: 'route-58', dir: (activeRoute === '58번' ? activeDir : directionOptions['58번'][0]) },
-    { name: 'GTX-A', class: 'route-gtx', dir: (activeRoute === 'GTX-A' ? activeDir : directionOptions['GTX-A'][0]) }
+    { name: 'GTX-A', class: 'route-gtx', dir: (activeRoute === 'GTX-A' ? activeDir : directionOptions['GTX-A'][0]) },
+    { name: '5500-2번', class: 'route-5500', dir: '광교' }
   ];
 
   // 58번이 성복, 구성 선택시에만 나타나도록 필터 조건 추가
   const routesToShow = allRoutes.filter(r => {
     if (activeRoute === 'GTX-A') return r.name === 'GTX-A';
+    if (activeRoute === '5500-2번') return r.name === '5500-2번';
     if (activeDir.includes('상현')) {
       return r.name === '99번' || r.name === '801번';
     } else if (activeDir.includes('성복')) {
@@ -440,19 +584,26 @@ function renderAll() {
   });
 
   routesToShow.forEach(r => {
-    const next = r.name === 'GTX-A' ? findNextGtxTrain(r.dir, now) : findNextBus(r.name, r.dir);
+    const next = r.name === 'GTX-A' ? findNextGtxTrain(r.dir, now)
+      : (r.name === '5500-2번' ? findNext5500Bus(now) : findNextBus(r.name, r.dir));
     if (!next) return;
     const card = document.createElement('div');
     card.className = `bus-info-card ${r.class}`;
     
     let curMins = now.getHours() * 60 + now.getMinutes();
     if (now.getHours() < 4) curMins += 1440;
-    const diff = r.name === 'GTX-A' ? Math.ceil((next.at - now) / 60000) : next.mins - curMins;
-    const remainText = r.name === 'GTX-A'
+    const diff = (r.name === 'GTX-A' || r.name === '5500-2번')
+      ? Math.ceil((next.at - now) / 60000) : next.mins - curMins;
+    const remainText = (r.name === 'GTX-A' || r.name === '5500-2번')
       ? ((next.isTomorrow ? '내일 출발 · ' : '') + diff + '분 남음')
       : (next.isTomorrow ? '(내일 첫차)' : (diff > 0 ? diff + '분 남음' : '잠시 후'));
     
-    const carLabel = r.name === 'GTX-A' ? ' <small class="gtx-car-label">(' + next.sequence + '호차)</small>' : '';
+    const carLabel = r.name === 'GTX-A'
+      ? ' <small class="gtx-car-label">(' + next.sequence + '호차)</small>'
+      : (r.name === '5500-2번'
+        ? ' <small class="bus5500-next-detail">(' + next.vehicle + '번 차량 · ' + next.round + '회' +
+          (next.doubleDeck ? ' · 2층' : '') + (next.reserved ? ' · 예약' : '') + ')</small>'
+        : '');
     card.innerHTML = `
       <div class="bus-name ${r.class}">${r.name} <span style="font-size:11px; color:#666; font-weight:normal;">(${r.dir} 출발)</span></div>
       <div class="bus-time-details">
@@ -467,6 +618,10 @@ function renderAll() {
   container.innerHTML = '';
   if (activeRoute === 'GTX-A') {
     renderGtxTable(container, activeDir);
+    return;
+  }
+  if (activeRoute === '5500-2번') {
+    render5500Table(container, now);
     return;
   }
   const data = timetable[dayKey][activeRoute];
@@ -516,7 +671,7 @@ function highlightTable(table) {
     const tds = tr.querySelectorAll('td');
     tds.forEach((td, cIdx) => {
       if(cIdx === 0) return;
-      const mins = timeToMins(td.innerText);
+      const mins = timeToMins(td.dataset.departure || td.innerText);
       if(mins !== -1) allPoints.push({ td, mins });
     });
   });

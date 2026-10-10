@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bus-departtime-v2';
+const CACHE_NAME = 'bus-departtime-v3';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -12,7 +12,8 @@ const APP_SHELL = [
   '/data_99_801.js',
   '/data_2_1.js',
   '/data_58.js',
-  '/data_gtx_a.js'
+  '/data_gtx_a.js',
+  '/data_5500_2.js'
 ];
 
 self.addEventListener('install', event => {
